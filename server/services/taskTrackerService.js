@@ -263,8 +263,8 @@ function detectProjectContext(toolCalls = []) {
   // Default to ai-router in D:\startup\ai-router
   return {
     name: 'ai-router',
-    path: 'D:\\startup\\ai-router',
-    root: 'D:\\startup\\ai-router'
+    path: process.cwd(),
+    root: process.cwd()
   };
 }
 
@@ -1162,7 +1162,7 @@ function getAntigravityActiveSessionHierarchy(targetConversationId = null) {
         name: comboName,
         role: detectedRole,
         model: model,
-        account: 'manh06092001@gmail.com',
+        account: 'user@gmail.com',
         status: isAgentActuallyWorking ? 'running' : 'completed',
         taskSummary: parentTaskSummary,
         updatedAt: mtimeMs
@@ -1184,8 +1184,8 @@ function getAntigravityActiveSessionHierarchy(targetConversationId = null) {
 function getIdleHierarchy() {
   const defaultProj = {
     name: 'ai-router',
-    path: 'D:\\startup\\ai-router',
-    root: 'D:\\startup\\ai-router'
+    path: process.cwd(),
+    root: process.cwd()
   };
 
   const defaultTask = {
@@ -1215,7 +1215,7 @@ function getIdleHierarchy() {
       name: 'Todo Full-Lifecycle Pipeline (Sẵn Sàng)',
       role: 'todo_orchestrator',
       model: 'gemini-3.8-flash-high',
-      account: 'manh06092001@gmail.com',
+      account: 'user@gmail.com',
       status: 'idle',
       taskSummary: 'Hệ thống đang sẵn sàng. Hãy gõ /todo <yêu cầu> để kích hoạt chu trình 5 bước khép kín!',
       updatedAt: Date.now()

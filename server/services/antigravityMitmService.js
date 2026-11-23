@@ -266,8 +266,6 @@ async function resolveGoogleIp(domain) {
 }
 
 const exhaustedAccounts = new Map();
-// Pre-mark known exhausted accounts
-exhaustedAccounts.set('manh06092001@gmail.com', Date.now() + 24 * 3600 * 1000);
 
 function markAccountExhausted(email, ttlMs = 4 * 3600 * 1000) {
   if (!email) return;
