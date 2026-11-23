@@ -1,0 +1,45 @@
+{
+  "name": "brakthroonam-router",
+  "version": "1.0.2",
+  "description": "Local AI Gateway & Reverse Proxy Engine for Google Gemini, OpenAI Codex, and Anthropic Claude with Multi-Account Auto-Rotation & Antigravity MITM Interception.",
+  "main": "server/index.js",
+  "bin": {
+    "brakthroonam-router": "bin/cli.js",
+    "ai-router": "bin/cli.js"
+  },
+  "files": [
+    "bin",
+    "server",
+    "web/dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "start": "node bin/cli.js",
+    "build:web": "cd web && npm run build",
+    "test": "node -e \"console.log('OK')\""
+  },
+  "keywords": [
+    "ai",
+    "proxy",
+    "gateway",
+    "gemini",
+    "antigravity",
+    "codex",
+    "claude",
+    "llm",
+    "mitm",
+    "anti-429"
+  ],
+  "author": "Brakthroonam",
+  "license": "ISC",
+  "type": "commonjs",
+  "preferGlobal": true,
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "node-forge": "^1.4.3"
+  }
+}

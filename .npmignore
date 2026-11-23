@@ -1,0 +1,27 @@
+# Sensitive & Local Runtime Data
+data/
+*.sqlite*
+*.db*
+*.log
+.env*
+
+# Web Source (Only web/dist is bundled)
+web/src/
+web/node_modules/
+web/public/
+web/index.html
+web/vite.config.*
+web/tsconfig*
+plans/
+scratch/
+
+# Include built frontend
+!web/dist
+!web/dist/**
+
+# Git & Cache
+.git/
+.gitignore
+.npmignore
+.DS_Store
+Thumbs.db
