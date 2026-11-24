@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { execSync } = require('child_process');
 const Database = require('better-sqlite3');
 const { getDb } = require('../db');
@@ -15,7 +16,9 @@ let lastAgSyncTime = 0;
 function getAntigravityActiveAccount(db) {
   let activeEmail = null;
   try {
-    const appStoragePath = path.join(process.env.APPDATA || '', 'Antigravity', 'app_storage.json');
+    const appStoragePath = process.platform === 'win32'
+      ? path.join(process.env.APPDATA || os.homedir(), 'Antigravity', 'app_storage.json')
+      : path.join(os.homedir(), '.config', 'Antigravity', 'app_storage.json');
     if (fs.existsSync(appStoragePath)) {
       const data = JSON.parse(fs.readFileSync(appStoragePath, 'utf8'));
       if (data['agy.onboarding.lastLoginUsername'] && typeof data['agy.onboarding.lastLoginUsername'] === 'string') {
@@ -26,7 +29,7 @@ function getAntigravityActiveAccount(db) {
 
   if (!activeEmail) {
     try {
-      const googleAccPath = path.join(process.env.USERPROFILE || process.env.HOME || 'C:\\Users\\Admin', '.gemini', 'google_accounts.json');
+      const googleAccPath = path.join(os.homedir(), '.gemini', 'google_accounts.json');
       if (fs.existsSync(googleAccPath)) {
         const data = JSON.parse(fs.readFileSync(googleAccPath, 'utf8'));
         if (data.active) activeEmail = data.active.trim();
@@ -118,7 +121,7 @@ function detectRoleFromTranscript(lines) {
 }
 
 function detectAntigravityLiveSession() {
-  const baseDir = path.join(process.env.USERPROFILE || process.env.HOME || 'C:\\Users\\Admin', '.gemini', 'antigravity');
+  const baseDir = path.join(os.homedir(), '.gemini', 'antigravity');
   const brainDir = path.join(baseDir, 'brain');
   if (!fs.existsSync(brainDir)) return null;
 
@@ -312,7 +315,7 @@ function syncAntigravityUsage() {
   if (now - lastAgSyncTime < 3000) return;
   lastAgSyncTime = now;
 
-  const baseDir = path.join(process.env.USERPROFILE || process.env.HOME || 'C:\\Users\\Admin', '.gemini', 'antigravity');
+  const baseDir = path.join(os.homedir(), '.gemini', 'antigravity');
   const brainDir = path.join(baseDir, 'brain');
   if (!fs.existsSync(brainDir)) return;
 

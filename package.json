@@ -11,6 +11,9 @@
     "bin",
     "server",
     "web/dist",
+    "start.sh",
+    "stop.sh",
+    "setup-linux.sh",
     "README.md",
     "LICENSE"
   ],

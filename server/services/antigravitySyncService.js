@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { getDb } = require('../db');
 const googleAuthService = require('./googleAuthService');
 
@@ -8,7 +9,9 @@ let syncIntervalTimer = null;
 
 function readAntigravityCurrentUsername() {
   try {
-    const appStoragePath = path.join(process.env.APPDATA || '', 'Antigravity', 'app_storage.json');
+    const appStoragePath = process.platform === 'win32'
+      ? path.join(process.env.APPDATA || os.homedir(), 'Antigravity', 'app_storage.json')
+      : path.join(os.homedir(), '.config', 'Antigravity', 'app_storage.json');
     if (fs.existsSync(appStoragePath)) {
       const data = JSON.parse(fs.readFileSync(appStoragePath, 'utf8'));
       if (data['agy.onboarding.lastLoginUsername'] && typeof data['agy.onboarding.lastLoginUsername'] === 'string') {
@@ -18,7 +21,7 @@ function readAntigravityCurrentUsername() {
   } catch (err) {}
 
   try {
-    const googleAccPath = path.join(process.env.USERPROFILE || process.env.HOME || 'C:\\Users\\Admin', '.gemini', 'google_accounts.json');
+    const googleAccPath = path.join(os.homedir(), '.gemini', 'google_accounts.json');
     if (fs.existsSync(googleAccPath)) {
       const data = JSON.parse(fs.readFileSync(googleAccPath, 'utf8'));
       if (data.active) return data.active.trim();
@@ -60,7 +63,7 @@ function syncAntigravityActiveAccount() {
     // Check .gemini/oauth_creds.json for new account credentials
     let creds = null;
     try {
-      const credPath = path.join(process.env.USERPROFILE || process.env.HOME || 'C:\\Users\\Admin', '.gemini', 'oauth_creds.json');
+      const credPath = path.join(os.homedir(), '.gemini', 'oauth_creds.json');
       if (fs.existsSync(credPath)) {
         const raw = JSON.parse(fs.readFileSync(credPath, 'utf8'));
         if (raw.refresh_token) {

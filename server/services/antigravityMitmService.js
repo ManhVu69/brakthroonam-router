@@ -39,6 +39,20 @@ if (!fs.existsSync(CERT_DIR)) {
   fs.mkdirSync(CERT_DIR, { recursive: true });
 }
 
+function flushDnsCache() {
+  try {
+    if (process.platform === 'win32') {
+      execSync('ipconfig /flushdns', { stdio: 'ignore', timeout: 1500 });
+    } else if (process.platform === 'darwin') {
+      execSync('killall -HUP mDNSResponder', { stdio: 'ignore', timeout: 1500 });
+    } else {
+      try { execSync('resolvectl flush-caches', { stdio: 'ignore', timeout: 1500 }); } catch {
+        try { execSync('systemd-resolve --flush-caches', { stdio: 'ignore', timeout: 1500 }); } catch {}
+      }
+    }
+  } catch {}
+}
+
 /**
  * 1. CERTIFICATE MANAGEMENT (Pure JavaScript via node-forge)
  */
@@ -205,7 +219,7 @@ function enableHosts() {
 
   try {
     fs.writeFileSync(HOSTS_PATH, newContent, 'utf8');
-    execSync('ipconfig /flushdns', { stdio: 'ignore' });
+    flushDnsCache();
     return true;
   } catch (err) {
     return isHostsConfigured();
@@ -222,7 +236,7 @@ function disableHosts() {
 
   try {
     fs.writeFileSync(HOSTS_PATH, newContent, 'utf8');
-    execSync('ipconfig /flushdns', { stdio: 'ignore' });
+    flushDnsCache();
     return true;
   } catch {
     return !isHostsConfigured();
@@ -577,9 +591,11 @@ async function enableMitmAll() {
   if (!isCaTrustedInWindows() || !isHostsConfigured()) {
     let directOk = false;
     try {
-      execSync(`certutil -addstore -f "ROOT" "${CA_CRT_PATH}"`, { stdio: 'ignore', timeout: 1500 });
+      if (process.platform === 'win32') {
+        execSync(`certutil -addstore -f "ROOT" "${CA_CRT_PATH}"`, { stdio: 'ignore', timeout: 1500 });
+      }
       directOk = enableHosts();
-      try { execSync('ipconfig /flushdns', { stdio: 'ignore', timeout: 1000 }); } catch (_) {}
+      flushDnsCache();
     } catch (_) {}
   }
 

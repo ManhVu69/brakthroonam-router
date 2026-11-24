@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { getDb } = require('../db');
 
 /**
@@ -87,7 +88,7 @@ function isSubagentConversation(baseDir, convId) {
  * Always targets the root user conversation, filtering out temporary child subagents.
  */
 function getActiveAntigravityConversationId() {
-  const baseDir = path.join(process.env.USERPROFILE || process.env.HOME || 'C:\\Users\\Admin', '.gemini', 'antigravity');
+  const baseDir = path.join(os.homedir(), '.gemini', 'antigravity');
   const convDir = path.join(baseDir, 'conversations');
 
   let activeId = null;
@@ -861,7 +862,7 @@ function buildTodoPipelineStages({
 }
 
 function getAntigravityActiveSessionHierarchy(targetConversationId = null) {
-  const baseDir = path.join(process.env.USERPROFILE || process.env.HOME || 'C:\\Users\\Admin', '.gemini', 'antigravity');
+  const baseDir = path.join(os.homedir(), '.gemini', 'antigravity');
   let conversationId = targetConversationId;
   let lastModified = 0;
 
@@ -1255,7 +1256,7 @@ function getIdleHierarchy() {
  * Filters out subagents, extracts user prompt, command type, and running status.
  */
 function getAllAntigravitySessions(maxCount = 8) {
-  const baseDir = path.join(process.env.USERPROFILE || process.env.HOME || 'C:\\Users\\Admin', '.gemini', 'antigravity');
+  const baseDir = path.join(os.homedir(), '.gemini', 'antigravity');
   const convDir = path.join(baseDir, 'conversations');
   const brainDir = path.join(baseDir, 'brain');
 
