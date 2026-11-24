@@ -9,6 +9,14 @@ let syncIntervalTimer = null;
 
 function readAntigravityCurrentUsername() {
   try {
+    const googleAccPath = path.join(os.homedir(), '.gemini', 'google_accounts.json');
+    if (fs.existsSync(googleAccPath)) {
+      const data = JSON.parse(fs.readFileSync(googleAccPath, 'utf8'));
+      if (data.active) return data.active.trim();
+    }
+  } catch (err) {}
+
+  try {
     const appStoragePath = process.platform === 'win32'
       ? path.join(process.env.APPDATA || os.homedir(), 'Antigravity', 'app_storage.json')
       : path.join(os.homedir(), '.config', 'Antigravity', 'app_storage.json');
@@ -17,14 +25,6 @@ function readAntigravityCurrentUsername() {
       if (data['agy.onboarding.lastLoginUsername'] && typeof data['agy.onboarding.lastLoginUsername'] === 'string') {
         return data['agy.onboarding.lastLoginUsername'].trim();
       }
-    }
-  } catch (err) {}
-
-  try {
-    const googleAccPath = path.join(os.homedir(), '.gemini', 'google_accounts.json');
-    if (fs.existsSync(googleAccPath)) {
-      const data = JSON.parse(fs.readFileSync(googleAccPath, 'utf8'));
-      if (data.active) return data.active.trim();
     }
   } catch (err) {}
 

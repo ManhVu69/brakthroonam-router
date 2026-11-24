@@ -3,11 +3,11 @@ const path = require('path');
 const https = require('https');
 const http2 = require('http2');
 const tls = require('tls');
-const dns = require('dns').promises;
 const { execSync, exec } = require('child_process');
 const forge = require('node-forge');
 const { getDb } = require('../db');
 const { refreshAccessToken } = require('./googleAuthService');
+const { resolveDirectHost, invalidateDnsCache } = require('./googleDnsHelper');
 
 const defaultLocalCertDir = path.join(__dirname, '..', '..', 'data', 'certs');
 const CERT_DIR = fs.existsSync(defaultLocalCertDir)
@@ -30,9 +30,6 @@ const TARGET_DOMAINS = [
 
 let mitmServer = null;
 let isMitmRunning = false;
-let resolvedIps = {};
-let dnsResolver = new dns.Resolver();
-dnsResolver.setServers(['8.8.8.8', '1.1.1.1']);
 
 // Ensure certs directory exists
 if (!fs.existsSync(CERT_DIR)) {
@@ -264,32 +261,24 @@ registerGracefulShutdown();
  * 3. REAL GOOGLE IP RESOLUTION (Bypassing localhost hosts file)
  */
 async function resolveGoogleIp(domain) {
-  if (resolvedIps[domain] && (Date.now() - resolvedIps[domain].ts < 300000)) {
-    return resolvedIps[domain].ip;
-  }
-  try {
-    const ips = await dnsResolver.resolve4(domain);
-    if (ips && ips.length > 0) {
-      resolvedIps[domain] = { ip: ips[0], ts: Date.now() };
-      return ips[0];
-    }
-  } catch (err) {
-    console.warn(`[Brakthroonam MITM] DNS resolve fallback for ${domain}:`, err.message);
-  }
-  return domain;
+  return await resolveDirectHost(domain);
 }
 
 const exhaustedAccounts = new Map();
 
-function markAccountExhausted(email, ttlMs = 4 * 3600 * 1000) {
+function markAccountExhausted(email, isBurst = false) {
   if (!email) return;
   const key = email.toLowerCase().trim();
+  // Burst rate limit (RPM) resets in 60s; 5h quota pauses in-memory for 15 minutes
+  const ttlMs = isBurst ? 60 * 1000 : 15 * 60 * 1000;
   exhaustedAccounts.set(key, Date.now() + ttlMs);
-  console.warn(`[Brakthroonam MITM] 🚫 Marked ${key} as QUOTA EXHAUSTED for ${Math.round(ttlMs / 60000)} mins.`);
-  try {
-    const db = getDb();
-    db.prepare("UPDATE provider_accounts SET priority = 99 WHERE lower(email) = ? AND provider = 'gemini'").run(key);
-  } catch (err) {}
+  console.warn(`[Brakthroonam MITM] 🚫 Marked ${key} on temporary cooldown for ${Math.round(ttlMs / 1000)}s (${isBurst ? 'Burst RPM' : 'Quota'}).`);
+}
+
+function clearAccountExhausted(email) {
+  if (!email) return;
+  const key = email.toLowerCase().trim();
+  exhaustedAccounts.delete(key);
 }
 
 function isAccountExhausted(email) {
@@ -302,6 +291,20 @@ function isAccountExhausted(email) {
     return false;
   }
   return true;
+}
+
+function getAccountFromAuthHeader(authHeader) {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  const db = getDb();
+  const accounts = db.prepare("SELECT * FROM provider_accounts WHERE provider = 'gemini'").all();
+  for (const acc of accounts) {
+    try {
+      const c = JSON.parse(acc.credentials || '{}');
+      if (c.accessToken === token) return acc;
+    } catch (_) {}
+  }
+  return null;
 }
 
 /**
@@ -336,8 +339,8 @@ async function getActiveStandbyAccount(excludeEmails = []) {
     if (creds.refreshToken) {
       try {
         const refreshed = await refreshAccessToken(creds.refreshToken);
-        creds.accessToken = refreshed.access_token;
-        creds.expiresAt = Date.now() + (refreshed.expires_in * 1000);
+        creds.accessToken = refreshed.access_token || refreshed.accessToken;
+        creds.expiresAt = Date.now() + ((refreshed.expires_in || 3600) * 1000);
         db.prepare("UPDATE provider_accounts SET credentials = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(JSON.stringify(creds), acc.id);
         return { account: acc, accessToken: creds.accessToken, projectId: creds.projectId };
       } catch (e) {
@@ -353,8 +356,9 @@ async function getActiveStandbyAccount(excludeEmails = []) {
 // Dedicated connection pool agent for upstream Google requests
 const upstreamAgent = new https.Agent({
   keepAlive: true,
-  keepAliveMsecs: 20000,
+  keepAliveMsecs: 15000,
   maxSockets: 50,
+  maxFreeSockets: 20,
   timeout: 0
 });
 
@@ -381,7 +385,15 @@ function startMitmServer() {
     }
   };
 
-  mitmServer = https.createServer(tlsOptions, async (clientReq, clientRes) => {
+  mitmServer = https.createServer(tlsOptions, (clientReq, clientRes) => {
+    // Keep-alive and socket performance tuning
+    if (clientReq.socket) {
+      clientReq.socket.setKeepAlive(true, 15000);
+      clientReq.socket.setNoDelay(true);
+      clientReq.socket.setTimeout(0);
+    }
+    clientRes.setTimeout(0);
+
     // Robust socket error prevention
     clientReq.on('error', (err) => {
       console.warn('[Brakthroonam MITM] Client request socket warning:', err.message);
@@ -396,9 +408,15 @@ function startMitmServer() {
     // Buffer client request body
     const chunks = [];
     clientReq.on('data', chunk => chunks.push(chunk));
-    clientReq.on('end', async () => {
+    clientReq.on('end', () => {
       const bodyBuffer = Buffer.concat(chunks);
-      await handleUpstreamProxy(clientReq, clientRes, hostHeader, bodyBuffer, isAntigravityStream);
+      handleUpstreamProxy(clientReq, clientRes, hostHeader, bodyBuffer, isAntigravityStream).catch(err => {
+        console.error('[Brakthroonam MITM] Unhandled proxy error:', err);
+        if (!clientRes.headersSent) {
+          clientRes.writeHead(502, { 'Content-Type': 'application/json' });
+          clientRes.end(JSON.stringify({ error: { code: 502, message: 'Gateway proxy error: ' + err.message } }));
+        }
+      });
     });
   });
 
@@ -433,7 +451,11 @@ function startMitmServer() {
 async function handleUpstreamProxy(clientReq, clientRes, hostHeader, bodyBuffer, isAntigravityStream, retryCount = 0) {
   const realIp = await resolveGoogleIp(hostHeader);
   const { readAntigravityCurrentUsername } = require('./antigravitySyncService');
+  
+  // Accurate account resolution: Match Bearer token first, then active IDE user
+  const accFromToken = getAccountFromAuthHeader(clientReq.headers['authorization']);
   const activeIdeEmail = (readAntigravityCurrentUsername() || '').toLowerCase().trim();
+  const currentReqEmail = accFromToken ? accFromToken.email.toLowerCase().trim() : activeIdeEmail;
 
   const upstreamHeaders = { ...clientReq.headers };
   upstreamHeaders.host = hostHeader;
@@ -441,11 +463,11 @@ async function handleUpstreamProxy(clientReq, clientRes, hostHeader, bodyBuffer,
 
   let effectiveBodyBuffer = bodyBuffer;
 
-  // 1. PROACTIVE AUTO-SWAP: If the currently logged-in account is known to be exhausted, swap BEFORE hitting Google!
-  if (retryCount === 0 && activeIdeEmail && isAccountExhausted(activeIdeEmail)) {
-    const standby = await getActiveStandbyAccount([activeIdeEmail]);
+  // 1. PROACTIVE AUTO-SWAP: Only for inference streams if current account is known to be on cooldown
+  if (isAntigravityStream && retryCount === 0 && currentReqEmail && isAccountExhausted(currentReqEmail)) {
+    const standby = await getActiveStandbyAccount([currentReqEmail]);
     if (standby && standby.accessToken) {
-      console.log(`[Brakthroonam MITM] ⚡ Proactive Auto-Swap: ${activeIdeEmail} is exhausted -> routing via standby ${standby.account.email}`);
+      console.log(`[Brakthroonam MITM] ⚡ Proactive Auto-Swap: ${currentReqEmail} is on cooldown -> routing via standby ${standby.account.email}`);
       upstreamHeaders['authorization'] = `Bearer ${standby.accessToken}`;
 
       if (effectiveBodyBuffer && effectiveBodyBuffer.length > 0) {
@@ -478,7 +500,8 @@ async function handleUpstreamProxy(clientReq, clientRes, hostHeader, bodyBuffer,
     const statusCode = upstreamRes.statusCode;
 
     // Check if Google returned 429 (Quota), 403 (Subscription), or 401 (Token Expired)
-    if (statusCode === 429 || statusCode === 403 || statusCode === 401) {
+    // ONLY attempt auto-swap for INFERENCE streams (:streamGenerateContent, :generateContent)
+    if (isAntigravityStream && (statusCode === 429 || statusCode === 403 || statusCode === 401)) {
       const errChunks = [];
       upstreamRes.on('data', c => errChunks.push(c));
       upstreamRes.on('end', async () => {
@@ -486,7 +509,6 @@ async function handleUpstreamProxy(clientReq, clientRes, hostHeader, bodyBuffer,
         const isQuotaOrAuth = errBody.includes('RESOURCE_EXHAUSTED') ||
                               errBody.includes('quota') ||
                               errBody.includes('Individual quota') ||
-                              errBody.includes('SUBSCRIPTION_REQUIRED') ||
                               errBody.includes('UNAUTHENTICATED') ||
                               statusCode === 429 ||
                               statusCode === 401;
@@ -494,26 +516,24 @@ async function handleUpstreamProxy(clientReq, clientRes, hostHeader, bodyBuffer,
         if (isQuotaOrAuth && retryCount < 3) {
           console.warn(`[Brakthroonam MITM] ⚠️ Upstream hit Quota/Auth issue (${statusCode}). Initiating Instant Account Auto-Swap...`);
           
-          // Determine failing account and mark it exhausted (unless it's just token expiry 401)
-          const failedEmail = activeIdeEmail;
-          if (failedEmail && statusCode !== 401) {
-            markAccountExhausted(failedEmail);
+          const isBurst = statusCode === 429 && !errBody.includes('Individual quota');
+          if (statusCode !== 401) {
+            markAccountExhausted(currentReqEmail, isBurst);
           }
 
-          const standby = await getActiveStandbyAccount([failedEmail]);
+          const standby = await getActiveStandbyAccount([currentReqEmail]);
 
           if (standby && standby.accessToken) {
-            console.log(`[Brakthroonam MITM] 🔄 Swapping token to Standby Account: ${standby.account.email} (Priority 1)`);
+            console.log(`[Brakthroonam MITM] 🔄 Swapping token to Standby Account: ${standby.account.email}`);
             
-            // Re-index priorities in database
+            // Promote standby account as Priority 1
             const db = getDb();
-            db.transaction(() => {
-              if (failedEmail && statusCode !== 401) {
-                db.prepare("UPDATE provider_accounts SET priority = 99 WHERE lower(email) = ? AND provider = 'gemini'").run(failedEmail);
-              }
-              db.prepare("UPDATE provider_accounts SET priority = priority + 1 WHERE id != ? AND provider = 'gemini'").run(standby.account.id);
-              db.prepare("UPDATE provider_accounts SET priority = 1 WHERE id = ?").run(standby.account.id);
-            })();
+            try {
+              db.transaction(() => {
+                db.prepare("UPDATE provider_accounts SET priority = priority + 1 WHERE id != ? AND provider = 'gemini'").run(standby.account.id);
+                db.prepare("UPDATE provider_accounts SET priority = 1 WHERE id = ?").run(standby.account.id);
+              })();
+            } catch (_) {}
 
             // Retry with new token
             clientReq.headers['authorization'] = `Bearer ${standby.accessToken}`;
@@ -537,15 +557,23 @@ async function handleUpstreamProxy(clientReq, clientRes, hostHeader, bodyBuffer,
           }
         }
 
-        // If cannot swap, pipe original error to client
-        clientRes.writeHead(statusCode, upstreamRes.headers);
+        // If cannot swap or not a swappable error, pass original upstream response directly
+        const errHeaders = { ...upstreamRes.headers };
+        delete errHeaders['alt-svc'];
+        delete errHeaders['connection'];
+        clientRes.writeHead(statusCode, errHeaders);
         clientRes.end(Buffer.concat(errChunks));
       });
       return;
     }
 
     // Success response - forward stream
-    clientRes.writeHead(statusCode, upstreamRes.headers);
+    const forwardHeaders = { ...upstreamRes.headers };
+    delete forwardHeaders['alt-svc'];
+    delete forwardHeaders['connection'];
+    delete forwardHeaders['keep-alive'];
+
+    clientRes.writeHead(statusCode, forwardHeaders);
     upstreamRes.pipe(clientRes);
 
     upstreamRes.on('error', (err) => {
@@ -553,8 +581,11 @@ async function handleUpstreamProxy(clientReq, clientRes, hostHeader, bodyBuffer,
       if (!clientRes.writableEnded) clientRes.end();
     });
 
-    clientReq.on('close', () => {
-      if (!upstreamRes.complete) {
+    // CRITICAL FIX: Only abort upstream if the client disconnects before the response ends!
+    // NEVER abort on clientReq.on('close'), which fires when request upload completes!
+    clientRes.on('close', () => {
+      if (!clientRes.writableEnded && !upstreamRes.complete) {
+        console.log('[Brakthroonam MITM] Client aborted request. Cleaning up upstream connection.');
         upstreamReq.destroy();
       }
     });
@@ -565,12 +596,14 @@ async function handleUpstreamProxy(clientReq, clientRes, hostHeader, bodyBuffer,
     // If connection was reset or timed out and client response hasn't started, retry with fresh connection!
     if ((err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT' || err.code === 'EPIPE') && retryCount < 3 && !clientRes.headersSent) {
       console.log(`[Brakthroonam MITM] 🔄 Retrying connection after glitch (${err.code})...`);
-      delete resolvedIps[hostHeader];
+      invalidateDnsCache(hostHeader);
       return handleUpstreamProxy(clientReq, clientRes, hostHeader, effectiveBodyBuffer, isAntigravityStream, retryCount + 1);
     }
     if (!clientRes.headersSent) {
       clientRes.writeHead(502, { 'Content-Type': 'application/json' });
-      clientRes.end(JSON.stringify({ error: { message: 'Brakthroonam MITM Gateway Error: ' + err.message } }));
+      clientRes.end(JSON.stringify({ error: { code: 502, message: 'Brakthroonam MITM Gateway Error: ' + err.message } }));
+    } else {
+      if (!clientRes.writableEnded) clientRes.end();
     }
   });
 
@@ -662,5 +695,6 @@ module.exports = {
   installCaToWindows,
   generateCertificates,
   isAccountExhausted,
-  markAccountExhausted
+  markAccountExhausted,
+  clearAccountExhausted
 };

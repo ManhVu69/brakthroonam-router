@@ -1,29 +1,9 @@
 const https = require('https');
 const http = require('http');
 const fs = require('fs');
-const dns = require('dns').promises;
 const googleAuthService = require('./googleAuthService');
 const { getDb } = require('../db');
-
-const dnsResolver = new dns.Resolver();
-dnsResolver.setServers(['8.8.8.8', '1.1.1.1']);
-const resolvedGoogleIps = {};
-
-async function resolveDirectHost(hostname) {
-  if (hostname === 'cloudcode-pa.googleapis.com' || hostname === 'daily-cloudcode-pa.googleapis.com') {
-    if (resolvedGoogleIps[hostname] && (Date.now() - resolvedGoogleIps[hostname].ts < 300000)) {
-      return resolvedGoogleIps[hostname].ip;
-    }
-    try {
-      const ips = await dnsResolver.resolve4(hostname);
-      if (ips && ips.length > 0) {
-        resolvedGoogleIps[hostname] = { ip: ips[0], ts: Date.now() };
-        return ips[0];
-      }
-    } catch (_) {}
-  }
-  return hostname;
-}
+const { resolveDirectHost } = require('./googleDnsHelper');
 
 async function pingSingleModel(modelId, key, accessToken) {
   const t0 = Date.now();

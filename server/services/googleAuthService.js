@@ -1,25 +1,5 @@
 const https = require('https');
-const dns = require('dns').promises;
-
-const dnsResolver = new dns.Resolver();
-dnsResolver.setServers(['8.8.8.8', '1.1.1.1']);
-const resolvedGoogleIps = {};
-
-async function resolveDirectHost(hostname) {
-  if (hostname === 'cloudcode-pa.googleapis.com' || hostname === 'daily-cloudcode-pa.googleapis.com') {
-    if (resolvedGoogleIps[hostname] && (Date.now() - resolvedGoogleIps[hostname].ts < 300000)) {
-      return resolvedGoogleIps[hostname].ip;
-    }
-    try {
-      const ips = await dnsResolver.resolve4(hostname);
-      if (ips && ips.length > 0) {
-        resolvedGoogleIps[hostname] = { ip: ips[0], ts: Date.now() };
-        return ips[0];
-      }
-    } catch (_) {}
-  }
-  return hostname;
-}
+const { resolveDirectHost } = require('./googleDnsHelper');
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ['1071006060591-tmhssin2h21lcre235vtolojh4g403ep', 'apps.googleusercontent.com'].join('.');
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || ['GOCSPX', 'K58FWR486LdLJ1mLB8sXC4z6qDAf'].join('-');
