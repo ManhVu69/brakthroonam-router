@@ -658,6 +658,7 @@ module.exports = {
   stopMitmServer,
   enableHosts,
   disableHosts,
+  isHostsConfigured,
   installCaToWindows,
   generateCertificates,
   isAccountExhausted,

@@ -27,7 +27,23 @@ fi
 if ! command -v node >/dev/null 2>&1; then
     echo "[!] Node.js chua duoc cai dat tren he thong."
     echo "    Vui long cai dat Node.js bang lenh sau:"
-    echo "    sudo apt update && sudo apt install -y nodejs npm build-essential"
+    echo "    curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt install -y nodejs"
+    echo ""
+    read -p "Nhan Enter de thoat..."
+    exit 1
+fi
+
+NODE_MAJOR=$(node -v | cut -d'.' -f1 | sed 's/v//')
+if [ "$NODE_MAJOR" -lt 20 ]; then
+    echo "======================================================================="
+    echo "[!] CANH BAO: Phien ban Node.js hien tai la $(node -v) (qua cu)."
+    echo "    Thu vien better-sqlite3 yeu cau Node.js v20 hoac v22 (LTS) de chay."
+    echo "    Chay tren Node.js v18 se bi loi Segmentation fault (core dumped)."
+    echo ""
+    echo "    Vui long nang cap len Node.js v22 bang 2 lenh sau:"
+    echo "    curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -"
+    echo "    sudo apt install -y nodejs"
+    echo "======================================================================="
     echo ""
     read -p "Nhan Enter de thoat..."
     exit 1
