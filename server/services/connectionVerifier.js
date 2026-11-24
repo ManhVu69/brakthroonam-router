@@ -1,8 +1,29 @@
 const https = require('https');
 const http = require('http');
 const fs = require('fs');
+const dns = require('dns').promises;
 const googleAuthService = require('./googleAuthService');
 const { getDb } = require('../db');
+
+const dnsResolver = new dns.Resolver();
+dnsResolver.setServers(['8.8.8.8', '1.1.1.1']);
+const resolvedGoogleIps = {};
+
+async function resolveDirectHost(hostname) {
+  if (hostname === 'cloudcode-pa.googleapis.com' || hostname === 'daily-cloudcode-pa.googleapis.com') {
+    if (resolvedGoogleIps[hostname] && (Date.now() - resolvedGoogleIps[hostname].ts < 300000)) {
+      return resolvedGoogleIps[hostname].ip;
+    }
+    try {
+      const ips = await dnsResolver.resolve4(hostname);
+      if (ips && ips.length > 0) {
+        resolvedGoogleIps[hostname] = { ip: ips[0], ts: Date.now() };
+        return ips[0];
+      }
+    } catch (_) {}
+  }
+  return hostname;
+}
 
 async function pingSingleModel(modelId, key, accessToken) {
   const t0 = Date.now();
@@ -11,15 +32,17 @@ async function pingSingleModel(modelId, key, accessToken) {
     studioModel = 'gemini-3.8-flash';
   }
 
+  const hostname = accessToken ? 'cloudcode-pa.googleapis.com' : 'generativelanguage.googleapis.com';
+  const targetHost = await resolveDirectHost(hostname);
+
   return new Promise(resolve => {
-    let hostname;
     let path;
     let headers = { 'Content-Type': 'application/json' };
     let body;
 
     if (accessToken) {
-      hostname = 'cloudcode-pa.googleapis.com';
       path = '/v1internal:generateContent';
+      headers['Host'] = hostname;
       headers['Authorization'] = `Bearer ${accessToken}`;
       headers['User-Agent'] = 'antigravity/1.10.0 windows/amd64';
       headers['X-Goog-Api-Client'] = 'google-cloud-sdk vscode_cloudshelleditor/0.1';
@@ -29,16 +52,17 @@ async function pingSingleModel(modelId, key, accessToken) {
         request: { contents: [{ role: 'user', parts: [{ text: 'Ping' }] }] }
       });
     } else {
-      hostname = 'generativelanguage.googleapis.com';
       path = `/v1beta/models/${studioModel}:generateContent?key=${key || ''}`;
       body = JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'Ping' }] }] });
     }
 
     const req = https.request({
-      hostname,
+      hostname: targetHost,
+      servername: hostname,
       path,
       method: 'POST',
       headers,
+      rejectUnauthorized: false,
       timeout: 8000
     }, res => {
       let d = '';
