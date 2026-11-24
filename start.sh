@@ -39,5 +39,12 @@ if [ ! -d "node_modules" ]; then
     npm install
 fi
 
+# Check if router is already running on port 20129
+if command -v lsof >/dev/null 2>&1 && lsof -ti:20129 >/dev/null 2>&1; then
+    echo "[*] Brakthroonam Router da dang chay tren cong 20129! Dang mo Web Dashboard..."
+    xdg-open "http://localhost:20129" 2>/dev/null || true
+    exit 0
+fi
+
 # Launch router
 node "$SCRIPT_DIR/bin/cli.js" "$@"

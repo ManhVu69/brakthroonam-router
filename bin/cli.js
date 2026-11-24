@@ -80,12 +80,13 @@ async function main() {
     });
   } catch (err) {
     if (err.code === 'EADDRINUSE') {
-      console.error(`\n❌ Error: Port ${port} is already in use.`);
-      console.error(`Try running with another port: ai-router --port ${port + 1}\n`);
+      console.log(`\nℹ️ Brakthroonam Router is already running on port ${port}. Opening dashboard...`);
+      openBrowser(`http://localhost:${port}`);
+      process.exit(0);
     } else {
       console.error('Failed to start Brakthroonam Router:', err.message);
+      process.exit(1);
     }
-    process.exit(1);
   }
 }
 
