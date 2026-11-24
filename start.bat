@@ -16,6 +16,21 @@ echo   Che do    : Mo binh thuong (Cau hinh On-Demand theo nhu cau tren Web)
 echo =======================================================================
 echo.
 
+:: Kiem tra va tu dong cap nhat ban moi nhat tu GitHub (neu co git va online)
+where git >nul 2>nul
+if %errorlevel% equ 0 (
+    if exist ".git" (
+        echo [*] Dang kiem tra cap nhat tu GitHub...
+        git pull --quiet --ff-only >nul 2>nul
+        if %errorlevel% equ 0 (
+            echo [OK] He thong da duoc cap nhat len ban moi nhat!
+        ) else (
+            echo [!] Khong the tu dong cap nhat (co the do offline hoac xung dot).
+        )
+        echo.
+    )
+)
+
 :: Khoi dong Router bang duong dan tuyet doi, tranh bi anh huong boi System32
 node "%~dp0bin\cli.js"
 

@@ -12,6 +12,17 @@ echo "   OpenAI API: http://localhost:20129/v1"
 echo "======================================================================="
 echo ""
 
+# Kiem tra va tu dong cap nhat ban moi nhat tu GitHub (neu co git va online)
+if command -v git >/dev/null 2>&1 && [ -d ".git" ]; then
+    echo "[*] Dang kiem tra cap nhat tu GitHub..."
+    if git pull --ff-only >/dev/null 2>&1; then
+        echo "[OK] He thong da duoc cap nhat len ban moi nhat tu GitHub!"
+    else
+        echo "[!] Khong the tu dong cap nhat (co the do offline hoac xung dot code)."
+    fi
+    echo ""
+fi
+
 # Check if Node.js is installed
 if ! command -v node >/dev/null 2>&1; then
     echo "[!] Node.js chua duoc cai dat tren he thong."
