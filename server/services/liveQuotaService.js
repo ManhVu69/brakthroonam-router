@@ -7,6 +7,74 @@ try {
 const path = require('path');
 const os = require('os');
 const fs = require('fs');
+const https = require('https');
+const dns = require('dns').promises;
+
+// DNS Resolver with fallback to public DNS to bypass localhost hosts entries
+const dnsResolver = new dns.Resolver();
+dnsResolver.setServers(['8.8.8.8', '1.1.1.1']);
+const resolvedGoogleIps = {};
+
+async function resolveDirectHost(hostname) {
+  if (hostname === 'cloudcode-pa.googleapis.com' || hostname === 'daily-cloudcode-pa.googleapis.com') {
+    if (resolvedGoogleIps[hostname] && (Date.now() - resolvedGoogleIps[hostname].ts < 300000)) {
+      return resolvedGoogleIps[hostname].ip;
+    }
+    try {
+      const ips = await dnsResolver.resolve4(hostname);
+      if (ips && ips.length > 0) {
+        resolvedGoogleIps[hostname] = { ip: ips[0], ts: Date.now() };
+        return ips[0];
+      }
+    } catch (_) {}
+  }
+  return hostname;
+}
+
+function requestDirectGoogle(urlStr, headers, bodyData) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const url = new URL(urlStr);
+      const targetIp = await resolveDirectHost(url.hostname);
+      const reqHeaders = { ...headers, Host: url.hostname };
+
+      const options = {
+        hostname: targetIp,
+        servername: url.hostname,
+        port: 443,
+        path: url.pathname + url.search,
+        method: 'POST',
+        headers: reqHeaders,
+        rejectUnauthorized: false
+      };
+
+      const req = https.request(options, (res) => {
+        const chunks = [];
+        res.on('data', c => chunks.push(c));
+        res.on('end', () => {
+          const bodyText = Buffer.concat(chunks).toString('utf8');
+          resolve({
+            ok: res.statusCode >= 200 && res.statusCode < 300,
+            status: res.statusCode,
+            json: async () => JSON.parse(bodyText),
+            text: async () => bodyText
+          });
+        });
+      });
+
+      req.on('error', (err) => {
+        reject(err);
+      });
+
+      if (bodyData) {
+        req.write(typeof bodyData === 'string' ? bodyData : JSON.stringify(bodyData));
+      }
+      req.end();
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ['1071006060591-tmhssin2h21lcre235vtolojh4g403ep', 'apps.googleusercontent.com'].join('.');
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || ['GOCSPX', 'K58FWR486LdLJ1mLB8sXC4z6qDAf'].join('-');
@@ -158,7 +226,7 @@ async function fetchAntigravityLiveQuota(account, aiDb, forceRefresh = false) {
 
   let res = null;
   try {
-    res = await fetch(url, { method: 'POST', headers, body });
+    res = await requestDirectGoogle(url, headers, body);
   } catch (err) {
     return {
       message: `Lỗi kết nối tới Antigravity Quota API: ${err.message}`,
@@ -181,7 +249,7 @@ async function fetchAntigravityLiveQuota(account, aiDb, forceRefresh = false) {
       }
       headers.Authorization = `Bearer ${accessToken}`;
       try {
-        res = await fetch(url, { method: 'POST', headers, body });
+        res = await requestDirectGoogle(url, headers, body);
       } catch {}
     }
   }
