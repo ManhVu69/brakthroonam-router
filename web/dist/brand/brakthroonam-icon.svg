@@ -1,0 +1,42 @@
+<svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradient cam rực rỡ cho phần trên của chữ B -->
+    <linearGradient id="b-grad-top" x1="6" y1="4" x2="36" y2="24" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FDBA74" />
+      <stop offset="40%" stop-color="#FB923C" />
+      <stop offset="100%" stop-color="#F97316" />
+    </linearGradient>
+
+    <!-- Gradient hồng san hô / đỏ cam cho phần dưới của chữ B -->
+    <linearGradient id="b-grad-bottom" x1="6" y1="20" x2="38" y2="42" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FB7185" />
+      <stop offset="50%" stop-color="#F43F5E" />
+      <stop offset="100%" stop-color="#E11D48" />
+    </linearGradient>
+
+    <!-- Đổ bóng nhẹ tạo chiều sâu nổi bật trên nền kính mờ -->
+    <filter id="b-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#F97316" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <g filter="url(#b-glow)">
+    <!-- 1. Phần trên chữ B: Bong bóng hội thoại với 3 chấm thoại -->
+    <path
+      d="M8 8C8 5.79086 9.79086 4 12 4H26C29.3137 4 32 6.68629 32 10C32 13.3137 29.3137 16 26 16H8V8Z"
+      fill="url(#b-grad-top)"
+    />
+    <!-- 3 dấu chấm thoại nhỏ thể hiện tương tác giao tiếp -->
+    <circle cx="15" cy="10" r="1.5" fill="white" fill-opacity="0.85" />
+    <circle cx="20" cy="10" r="1.5" fill="white" fill-opacity="0.85" />
+    <circle cx="25" cy="10" r="1.5" fill="white" fill-opacity="0.85" />
+
+    <!-- 2. Phần dưới chữ B: Bong bóng thoại lớn hơn với đuôi thoại vát nhọn sang trái -->
+    <path
+      d="M8 17H28C31.866 17 35 20.134 35 24C35 27.866 31.866 31 28 31H14L8 37V17Z"
+      fill="url(#b-grad-bottom)"
+    />
+    <!-- Vạch ngang biểu trưng cho âm điệu / phát âm tiếng Anh -->
+    <rect x="15" y="23" width="12" height="2" rx="1" fill="white" fill-opacity="0.85" />
+  </g>
+</svg>

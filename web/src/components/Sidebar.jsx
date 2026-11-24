@@ -26,14 +26,7 @@ export default function Sidebar({ currentTab, setCurrentTab, status }) {
       {/* Brand & App Info */}
       <div className="sidebar-header">
         <div className="logo-badge" title="Brakthroonam Router Local Gateway Engine">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="3" fill="currentColor" fillOpacity="0.25"/>
-            <path d="M12 3v6M12 15v6M3 12h6M15 12h6"/>
-            <circle cx="12" cy="3" r="1.5"/>
-            <circle cx="12" cy="21" r="1.5"/>
-            <circle cx="3" cy="12" r="1.5"/>
-            <circle cx="21" cy="12" r="1.5"/>
-          </svg>
+          <img src="/brand/brakthroonam-icon.svg" width="22" height="22" alt="Brakthroonam Logo" style={{ objectFit: 'contain' }} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
           <span className="sidebar-title" style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>

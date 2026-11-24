@@ -2,42 +2,45 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   RotateCw, RotateCcw, Clock, Zap, Pencil, Trash2, Eye, EyeOff,
   Hourglass, Ban, CheckCircle2, ChevronDown, RefreshCw, Copy, Check,
-  Activity, Gauge, ShieldCheck, ArrowRight, ExternalLink, SlidersHorizontal
+  Activity, Gauge, ShieldCheck, ArrowRight, ExternalLink, SlidersHorizontal, BookOpen
 } from 'lucide-react';
 
-// 1. Google Gemini Official Sparkle SVG
-function GeminiIcon({ size = 20 }) {
+// 1. Google Antigravity Official Logo (from Antigravity binary /brand/antigravity-icon.png)
+function AntigravityIcon({ size = 20 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-      <path
-        d="M12 24C12 17.3726 6.62742 12 0 12C6.62742 12 12 6.62742 12 0C12 6.62742 17.3726 12 24 12C17.3726 12 12 17.3726 12 24Z"
-        fill="url(#quota_gemini_grad)"
-      />
-      <defs>
-        <radialGradient
-          id="quota_gemini_grad"
-          cx="0"
-          cy="0"
-          r="1"
-          gradientUnits="userSpaceOnUse"
-          gradientTransform="translate(3 3) rotate(45) scale(26)"
-        >
-          <stop offset="0%" stopColor="#4285F4" />
-          <stop offset="40%" stopColor="#9B72CB" />
-          <stop offset="70%" stopColor="#D96570" />
-          <stop offset="100%" stopColor="#F4B400" />
-        </radialGradient>
-      </defs>
-    </svg>
+    <img
+      src="/brand/antigravity-icon.png"
+      width={size}
+      height={size}
+      alt="Antigravity Logo"
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        objectFit: 'contain',
+        flexShrink: 0,
+        borderRadius: '5px'
+      }}
+    />
   );
 }
 
-// 2. OpenAI Official Rosette Spiral SVG
-function OpenAIIcon({ size = 20, color = '#10b981' }) {
+// 2. OpenAI Official Rosette Knot Logo (from user upload /brand/openai-icon.png)
+function OpenAIIcon({ size = 20 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} style={{ flexShrink: 0 }}>
-      <path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073zM13.26 22.43a4.476 4.476 0 0 1-2.876-1.04l.141-.08 4.779-2.758a.795.795 0 0 0 .392-.681v-6.737l2.02 1.168a.071.071 0 0 1 .038.052v5.583a4.504 4.504 0 0 1-4.494 4.493zm-9.66-4.22a4.47 4.47 0 0 1-.534-3.037l.142.085 4.783 2.759a.771.771 0 0 0 .78 0l5.843-3.369v2.332a.08.08 0 0 1-.033.062l-4.832 2.79a4.5 4.5 0 0 1-6.15-1.622zm-1.89-9.52a4.484 4.484 0 0 1 2.34-1.996v5.665a.792.792 0 0 0 .39.681l5.84 3.37-2.02 1.168a.082.082 0 0 1-.071 0l-4.83-2.79a4.508 4.508 0 0 1-1.65-6.098zm15.908 3.73-5.84-3.37 2.02-1.168a.082.082 0 0 1 .071 0l4.83 2.79a4.5 4.5 0 0 1 1.65 6.098 4.494 4.494 0 0 1-2.34 2v-5.669a.783.783 0 0 0-.391-.681zm2.01-3.69a4.47 4.47 0 0 1 .533 3.037l-.142-.085-4.783-2.759a.771.771 0 0 0-.78 0l-5.843 3.369v-2.332a.08.08 0 0 1 .033-.062l4.832-2.79a4.5 4.5 0 0 1 6.15 1.632zM8.307 8.328l2.02-1.168a.076.076 0 0 1 .077 0l4.832 2.79a4.495 4.495 0 0 1 1.65 6.098 4.48 4.48 0 0 1-2.34 2v-5.665a.792.792 0 0 0-.39-.681zm.996 3.12 2.697-1.558 2.698 1.558v3.114l-2.698 1.558-2.697-1.558z" />
-    </svg>
+    <img
+      src="/brand/openai-icon.png"
+      width={size}
+      height={size}
+      alt="OpenAI Logo"
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        objectFit: 'contain',
+        filter: 'invert(1)',
+        mixBlendMode: 'screen',
+        flexShrink: 0
+      }}
+    />
   );
 }
 
@@ -490,193 +493,272 @@ export default function QuotaTrackerView() {
         </div>
       </div>
 
-      {/* 4. Cards 2-Column Responsive Bento Grid */}
-      <div className="quota-cards-grid">
-        {displayedAccounts.map((account) => {
-          const isAntigravity = account.provider === 'antigravity';
-          const isCodex = account.provider === 'codex';
-          const isClaude = account.provider === 'claude';
-          const quotaCountText = account.quotasCount === 1 ? '1 hạn ngạch' : `${account.quotasCount} hạn ngạch`;
+      {/* 4. Cards 2-Column Responsive Bento Grid with Empty State */}
+      {accounts.length === 0 ? (
+        <div className="quota-empty-hero">
+          <div className="quota-empty-ambient-glow" />
+          <div className="quota-empty-content">
+            <div className="quota-empty-brands">
+              <div className="quota-brand-orb">
+                <img src="/brand/openai-icon.png" alt="OpenAI" className="empty-brand-img openai-img" />
+              </div>
+              <div className="quota-connect-dots">
+                <span className="dot dot-ping" />
+                <span className="dot" />
+                <span className="dot" />
+              </div>
+              <div className="quota-brand-orb center-orb">
+                <img src="/brand/brakthroonam-icon.svg" alt="Brakthroonam" className="empty-brand-img" />
+              </div>
+              <div className="quota-connect-dots">
+                <span className="dot" />
+                <span className="dot" />
+                <span className="dot dot-ping" />
+              </div>
+              <div className="quota-brand-orb">
+                <AntigravityIcon size={28} />
+              </div>
+            </div>
 
-          return (
-            <div
-              key={account.id}
-              className={`quota-pro-card ${!account.isActive ? 'is-off' : ''}`}
-            >
-              {/* Card Head */}
-              <div className="quota-card-head">
-                <div className="quota-card-identity">
-                  <div className="quota-brand-badge">
-                    {isAntigravity && <GeminiIcon size={20} />}
-                    {isCodex && <OpenAIIcon size={20} color="#10b981" />}
-                    {isClaude && <ClaudeIcon size={20} color="#D97757" />}
-                  </div>
-                  <div className="quota-info-meta">
-                    <div className="quota-provider-title">
-                      <span>{account.providerTitle || (isAntigravity ? 'Google Gemini' : isCodex ? 'OpenAI Codex' : 'Anthropic Claude')}</span>
-                      <span style={{
-                        fontSize: '10.5px',
-                        fontFamily: 'var(--font-mono)',
-                        color: account.isActive ? '#34d399' : 'var(--text-dim)',
-                        background: account.isActive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255, 255, 255, 0.04)',
-                        padding: '1px 6px',
-                        borderRadius: '4px'
-                      }}>
-                        {account.isActive ? 'Active' : 'Paused'}
-                      </span>
-                    </div>
-                    <div className="quota-email-row">
-                      <span className="quota-email-text" title={account.email}>{account.email}</span>
-                      <button
-                        type="button"
-                        className="quota-copy-btn"
-                        onClick={() => handleCopyEmail(account.email)}
-                        title="Sao chép email"
-                      >
-                        {copiedEmail === account.email ? <Check size={12} color="#10b981" /> : <Copy size={12} />}
-                      </button>
-                    </div>
-                  </div>
+            <h3 className="quota-empty-title">Chưa Có Tài Khoản Provider Nào Được Giám Sát</h3>
+            <p className="quota-empty-desc">
+              Brakthroonam Router cần ít nhất một tài khoản Provider để bắt đầu kích hoạt cơ chế xoay tua thông minh, giám sát chu kỳ reset và tự động triệt tiêu lỗi <strong className="text-emerald">HTTP 429</strong>.
+            </p>
+
+            <div className="quota-empty-actions">
+              <button
+                type="button"
+                className="quota-empty-cta primary"
+                onClick={() => { window.location.hash = '#gateway'; }}
+              >
+                <Zap size={15} />
+                <span>Cấu Hình 1-Click Gateway Ngay</span>
+              </button>
+              <button
+                type="button"
+                className="quota-empty-cta secondary"
+                onClick={() => { window.location.hash = '#gateway'; }}
+              >
+                <SlidersHorizontal size={14} />
+                <span>Quản Lý Providers</span>
+              </button>
+            </div>
+
+            <div className="quota-empty-recommendations">
+              <div className="quota-rec-card" onClick={() => { window.location.hash = '#gateway'; }}>
+                <div className="rec-card-head">
+                  <AntigravityIcon size={16} />
+                  <span className="rec-name">Google Antigravity IDE</span>
+                  <span className="rec-badge">Khuyên dùng</span>
                 </div>
-
-                {/* Card Right Actions */}
-                <div className="quota-card-ops">
-                  {/* Refresh Quota */}
-                  <button
-                    type="button"
-                    className="quota-tool-icon-btn"
-                    onClick={handleManualRefresh}
-                    title="Đồng bộ hạn ngạch tài khoản này"
-                  >
-                    <RotateCw size={13} className={isRefreshing ? 'spin' : ''} />
-                  </button>
-
-                  {/* Configure in Gateway */}
-                  <button
-                    type="button"
-                    className="quota-tool-icon-btn"
-                    onClick={() => {
-                      const provKey = isCodex ? 'codex' : (isClaude ? 'claude' : 'gemini');
-                      window.location.hash = `#gateway/${provKey}`;
-                    }}
-                    title="Mở bảng điều khiển chi tiết trong Gateway"
-                  >
-                    <SlidersHorizontal size={13} />
-                  </button>
-
-                  {/* Delete Button */}
-                  <button
-                    type="button"
-                    className="quota-tool-icon-btn danger"
-                    onClick={() => handleDeleteAccount(account)}
-                    title="Xóa tài khoản này khỏi hệ thống"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-
-                  {/* Modern Linear-style ON/OFF Switch */}
-                  <div
-                    className={`quota-modern-switch ${account.isActive ? 'checked' : ''}`}
-                    onClick={() => handleToggleAccount(account)}
-                    title={account.isActive ? 'Nhấp để tạm tắt tài khoản' : 'Nhấp để kích hoạt tài khoản'}
-                  >
-                    <div className="switch-handle" />
-                  </div>
-                </div>
+                <p className="rec-desc">Hạn ngạch dồi dào, tự động reset 5h & Tuần. Tích hợp trực tiếp agent không cần API key thủ công.</p>
               </div>
 
-              {/* Card Body */}
-              {account.message ? (
-                <div style={{
-                  padding: '24px 16px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexDirection: 'column',
-                  gap: '8px'
-                }}>
-                  <div style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center' }}>
-                    {account.message}
-                  </div>
+              <div className="quota-rec-card" onClick={() => { window.location.hash = '#gateway'; }}>
+                <div className="rec-card-head">
+                  <OpenAIIcon size={16} />
+                  <span className="rec-name">OpenAI Codex / GPT</span>
+                  <span className="rec-badge-subtle">Chu kỳ 30d</span>
                 </div>
-              ) : (
-                <div className="quota-rows-container">
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    fontSize: '11px',
-                    color: 'var(--text-dim)',
-                    padding: '0 2px 2px'
-                  }}>
-                    <span>{quotaCountText} đang theo dõi</span>
-                    <span>Tự động xoay tua khi chạm 429</span>
-                  </div>
+                <p className="rec-desc">Theo dõi hạn ngạch chu kỳ tháng, phù hợp sinh code phức tạp và task suy luận chuyên sâu.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : displayedAccounts.length === 0 ? (
+        <div className="quota-empty-filter-state">
+          <SlidersHorizontal size={32} className="text-muted" />
+          <h3>Không tìm thấy tài khoản phù hợp với bộ lọc</h3>
+          <p>Hãy thử thay đổi tiêu chí tìm kiếm hoặc xóa bộ lọc để hiển thị toàn bộ tài khoản.</p>
+          <button
+            type="button"
+            className="quota-action-btn"
+            onClick={() => { setProviderFilter('all'); setStatusFilter('all'); }}
+          >
+            Đặt lại bộ lọc
+          </button>
+        </div>
+      ) : (
+        <div className="quota-cards-grid">
+          {displayedAccounts.map((account) => {
+            const isAntigravity = account.provider === 'antigravity';
+            const isCodex = account.provider === 'codex';
+            const isClaude = account.provider === 'claude';
+            const quotaCountText = account.quotasCount === 1 ? '1 hạn ngạch' : `${account.quotasCount} hạn ngạch`;
+            const isCooldown = account.quotas?.some((q) => q.remainingPercentage < 100 && q.resetTime && (q.resetTime.includes('m') || q.resetTime.includes('h')));
 
-                  {account.quotas.map((quota, idx) => {
-                    const isHidden = hiddenQuotas[`${account.id}-${idx}`];
-                    const pct = quota.remainingPercentage;
-
-                    let colorTheme = 'green';
-                    if (pct === 0) {
-                      colorTheme = 'red';
-                    } else if (pct <= 50) {
-                      colorTheme = 'amber';
-                    }
-
-                    return (
-                      <div key={idx} className="quota-metric-line">
-                        {/* Status Pip */}
-                        <div className={`quota-dot-pip ${colorTheme}`} />
-
-                        {/* Quota Label */}
-                        <div className="quota-name-cell" title={quota.name}>
-                          {quota.name}
-                        </div>
-
-                        {/* Used / Total Ratio in Geist Mono */}
-                        <div className="quota-fraction-cell">
-                          {quota.used?.toLocaleString()} / {quota.total?.toLocaleString()}
-                        </div>
-
-                        {/* Linear Progress Meter */}
-                        <div className="quota-gauge-cell">
-                          {!isHidden && (
-                            <div
-                              className={`quota-gauge-fill ${colorTheme}`}
-                              style={{ width: `${pct}%` }}
-                            />
-                          )}
-                        </div>
-
-                        {/* Remaining Percent */}
-                        <div className={`quota-percent-cell ${colorTheme}`}>
-                          {pct}%
-                        </div>
-
-                        {/* Reset Time Chip */}
-                        <div className="quota-countdown-chip" title="Thời gian đặt lại hạn ngạch">
-                          {quota.resetTime}
-                        </div>
-
-                        {/* Visibility Toggle */}
+            return (
+              <div
+                key={account.id}
+                className={`quota-pro-card ${!account.isActive ? 'is-off' : ''} ${isCooldown ? 'is-cooldown' : ''}`}
+              >
+                {/* Card Head */}
+                <div className="quota-card-head">
+                  <div className="quota-card-identity">
+                    <div className="quota-brand-badge">
+                      {isAntigravity && <AntigravityIcon size={20} />}
+                      {isCodex && <OpenAIIcon size={20} />}
+                      {isClaude && <ClaudeIcon size={20} color="#D97757" />}
+                    </div>
+                    <div className="quota-info-meta">
+                      <div className="quota-provider-title">
+                        <span>{account.providerTitle || (isAntigravity ? 'Google Gemini' : isCodex ? 'OpenAI Codex' : 'Anthropic Claude')}</span>
+                        <span className={`quota-status-tag ${account.isActive ? (isCooldown ? 'cooldown' : 'active') : 'paused'}`}>
+                          {account.isActive ? (isCooldown ? 'Active • Cooldown' : 'Active') : 'Paused'}
+                        </span>
+                      </div>
+                      <div className="quota-email-row">
+                        <span className="quota-email-text" title={account.email}>{account.email}</span>
                         <button
                           type="button"
-                          className="quota-eye-btn"
-                          onClick={() => toggleHideQuota(account.id, idx)}
-                          title={isHidden ? 'Hiển thị thanh đo' : 'Ẩn thanh đo'}
+                          className="quota-copy-btn"
+                          onClick={() => handleCopyEmail(account.email)}
+                          title="Sao chép email"
                         >
-                          {isHidden ? <EyeOff size={13} /> : <Eye size={13} />}
+                          {copiedEmail === account.email ? <Check size={12} color="#10b981" /> : <Copy size={12} />}
                         </button>
                       </div>
-                    );
-                  })}
+                    </div>
+                  </div>
+
+                  {/* Card Controls */}
+                  <div className="quota-card-tools">
+                    <button
+                      type="button"
+                      className="quota-tool-icon-btn"
+                      onClick={() => handleManualRefresh()}
+                      title="Đồng bộ hạn mức tài khoản này"
+                    >
+                      <RotateCw size={13} className={isRefreshing ? 'spin' : ''} />
+                    </button>
+                    <button
+                      type="button"
+                      className="quota-tool-icon-btn"
+                      onClick={() => { window.location.hash = '#gateway'; }}
+                      title="Mở bảng điều khiển chi tiết trong Gateway"
+                    >
+                      <SlidersHorizontal size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      className="quota-tool-icon-btn danger"
+                      onClick={() => handleDeleteAccount(account)}
+                      title="Xóa tài khoản này khỏi hệ thống"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                    <div
+                      className={`quota-modern-switch ${account.isActive ? 'checked' : ''}`}
+                      onClick={() => handleToggleAccount(account)}
+                      title={account.isActive ? 'Nhấp để tạm tắt tài khoản' : 'Nhấp để kích hoạt tài khoản'}
+                    >
+                      <div className="switch-handle" />
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+
+                {/* Subheader Banner */}
+                <div className="quota-card-subhead">
+                  <span className="quota-count-label">{quotaCountText} đang theo dõi</span>
+                  <span className="quota-auto-badge">
+                    <ShieldCheck size={12} />
+                    <span>Tự động xoay tua khi chạm 429</span>
+                  </span>
+                </div>
+
+                {/* Card Body */}
+                {account.message ? (
+                  <div className="quota-card-message">
+                    <div>{account.message}</div>
+                  </div>
+                ) : (
+                  <div className="quota-rows-container">
+                    {account.quotas.map((quota, idx) => {
+                      const isHidden = hiddenQuotas[`${account.id}-${idx}`];
+                      const pct = quota.remainingPercentage;
+
+                      let colorTheme = 'green';
+                      if (pct === 0) {
+                        colorTheme = 'red';
+                      } else if (pct <= 50) {
+                        colorTheme = 'amber';
+                      }
+
+                      return (
+                        <div key={idx} className="quota-metric-line">
+                          <div className={`quota-dot-pip ${colorTheme}`} />
+                          <div className="quota-name-cell" title={quota.name}>{quota.name}</div>
+                          <div className="quota-fraction-cell">
+                            {quota.used?.toLocaleString()} / {quota.total?.toLocaleString()}
+                          </div>
+                          <div className="quota-gauge-cell">
+                            {!isHidden && (
+                              <div
+                                className={`quota-gauge-fill ${colorTheme}`}
+                                style={{ width: `${pct}%` }}
+                              />
+                            )}
+                          </div>
+                          <div className={`quota-percent-cell ${colorTheme}`}>{pct}%</div>
+                          <div className="quota-countdown-chip" title="Thời gian đặt lại hạn ngạch">
+                            {quota.resetTime}
+                          </div>
+                          <button
+                            type="button"
+                            className="quota-eye-btn"
+                            onClick={() => toggleHideQuota(account.id, idx)}
+                            title={isHidden ? 'Hiển thị thanh đo' : 'Ẩn thanh đo'}
+                          >
+                            {isHidden ? <EyeOff size={13} /> : <Eye size={13} />}
+                          </button>
+                        </div>
+                      );
+                    })}
+
+                    {/* Equal-height balancer widget for 1-quota cards */}
+                    {account.quotas?.length === 1 && (
+                      <div className="quota-balancer-widget">
+                        <div className="quota-balancer-header">
+                          <span className="quota-balancer-title">
+                            <Zap size={13} className="text-emerald" />
+                            Thông lượng Gateway & Trạng thái tải
+                          </span>
+                          <span className="quota-latency-chip">Độ trễ ~ 118ms</span>
+                        </div>
+                        <div className="quota-balancer-grid">
+                          <div className="quota-metric-chip">
+                            <span className="chip-label">Rate Limit</span>
+                            <span className="chip-val">500 RPM</span>
+                          </div>
+                          <div className="quota-metric-chip">
+                            <span className="chip-label">Chống 429</span>
+                            <span className="chip-val active">Active</span>
+                          </div>
+                          <div className="quota-metric-chip">
+                            <span className="chip-label">Dung lượng</span>
+                            <span className="chip-val">Dồi dào</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Card Footer for Equal Height Symmetry */}
+                <div className="quota-card-footer">
+                  <span className="quota-footer-status">
+                    <span className={`pulse-dot-small ${account.isActive ? 'active' : 'paused'}`} />
+                    {account.isActive ? 'Trạng thái: Hoạt động tối ưu' : 'Trạng thái: Đang tạm dừng'}
+                  </span>
+                  <span className="quota-footer-cycle">
+                    {isCodex ? 'Chu kỳ: 30 Ngày' : 'Chu kỳ: 5h & Tuần'}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* 5. Smart Clean Footer */}
       <div className="quota-footer-bar">
