@@ -435,17 +435,23 @@ export default function GatewayProvidersView({ status, onStatusChange }) {
           </div>
         </div>
 
-        <div className="hud-tile" style={{ '--tile-accent': '#10b981' }}>
+        <div className="hud-tile" style={{ '--tile-accent': totalConnected > 0 ? '#10b981' : '#64748b' }}>
           <div className="hud-top-meta">
             <span>Tài Khoản Kết Nối</span>
             <Server size={14} />
           </div>
           <div className="hud-num-row">
-            <span className="hud-big-num">{totalConnected || 4} Accounts</span>
-            <span className="hud-pill-tag">Sẵn sàng</span>
+            <span className="hud-big-num">{totalConnected} Accounts</span>
+            {totalConnected > 0 ? (
+              <span className="hud-pill-tag">Sẵn sàng</span>
+            ) : (
+              <span className="hud-pill-tag" style={{ background: 'rgba(100, 116, 139, 0.15)', color: '#94a3b8', borderColor: 'rgba(100, 116, 139, 0.3)' }}>
+                Chưa kết nối
+              </span>
+            )}
           </div>
           <div className="hud-desc-sub">
-            {geminiAccounts.length || 3} Google OAuth · {codexAccounts.length || 1} Codex Session
+            {geminiAccounts.length} Google OAuth · {codexAccounts.length} Codex Session
           </div>
         </div>
 
@@ -455,7 +461,7 @@ export default function GatewayProvidersView({ status, onStatusChange }) {
             <Cpu size={14} />
           </div>
           <div className="hud-num-row">
-            <span className="hud-big-num">{totalModels || 31} Models</span>
+            <span className="hud-big-num">{totalModels} Models</span>
             <span className="hud-pill-tag" style={{ background: 'rgba(139,92,246,0.15)', color: '#c084fc' }}>
               Multi-Tier
             </span>
