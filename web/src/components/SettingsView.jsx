@@ -132,14 +132,19 @@ export default function SettingsView({ status, onStatusChange }) {
     }
   };
 
-  const handleSyncSkills = async () => {
+  const handleSyncSkills = async (target = 'all') => {
     try {
       setSyncingSkills(true);
-      const res = await fetch('/api/skills/sync', { method: 'POST' });
-      if (res.ok) {
-        showToast('Đã đồng bộ 4 Global Skills (/todo, /fix, /planning, /ask) thành công!');
+      const res = await fetch('/api/skills/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(data.message);
       } else {
-        throw new Error('Sync failed');
+        throw new Error(data.error || 'Sync failed');
       }
     } catch (err) {
       showToast('Lỗi đồng bộ skills: ' + err.message);
@@ -661,21 +666,55 @@ export default function SettingsView({ status, onStatusChange }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
           <div style={{ background: 'var(--bg-input)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '12px' }}>
             <div>
-              <div style={{ fontSize: '13.5px', fontWeight: '700', color: 'var(--text-main)' }}>Đồng Bộ 4 Global Skills</div>
+              <div style={{ fontSize: '13.5px', fontWeight: '700', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Zap size={15} color="#38bdf8" /> Cài Đặt Skills Cho AI Agent
+              </div>
               <div style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '4px' }}>
-                Ghi đè và cập nhật 4 file SKILL.md (/todo, /fix, /planning, /ask) tại ~/.gemini/config/skills/.
+                Đồng bộ 4 Slash Commands (/todo, /fix, /planning, /ask) vào ứng dụng AI tương ứng:
               </div>
             </div>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={handleSyncSkills}
-              disabled={syncingSkills}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '12.5px' }}
-            >
-              <RefreshCw size={14} className={syncingSkills ? 'animate-spin' : ''} />
-              {syncingSkills ? 'Đang đồng bộ...' : 'Đồng Bộ Lại Skills'}
-            </button>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => handleSyncSkills('antigravity')}
+                disabled={syncingSkills}
+                style={{ fontSize: '11px', padding: '7px 8px', borderColor: 'rgba(56, 189, 248, 0.3)', color: '#38bdf8' }}
+                title="Cài vào ~/.gemini/config/skills/"
+              >
+                🌐 Antigravity
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => handleSyncSkills('codex')}
+                disabled={syncingSkills}
+                style={{ fontSize: '11px', padding: '7px 8px', borderColor: 'rgba(16, 185, 129, 0.3)', color: '#10b981' }}
+                title="Cài vào ~/.codex/skills/ & ~/.codex/AGENTS_RULES.md"
+              >
+                🟢 Codex / GPT
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => handleSyncSkills('claude')}
+                disabled={syncingSkills}
+                style={{ fontSize: '11px', padding: '7px 8px', borderColor: 'rgba(217, 119, 87, 0.3)', color: '#D97757' }}
+                title="Cài vào ~/.claude/skills/"
+              >
+                🟠 Claude Code
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => handleSyncSkills('all')}
+                disabled={syncingSkills}
+                style={{ fontSize: '11px', padding: '7px 8px' }}
+                title="Cài đặt cho tất cả nền tảng"
+              >
+                ⚡ Tất Cả
+              </button>
+            </div>
           </div>
 
           <div style={{ background: 'var(--bg-input)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '12px' }}>

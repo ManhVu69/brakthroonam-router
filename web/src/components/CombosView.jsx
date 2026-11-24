@@ -42,6 +42,55 @@ const getInitialSubTab = () => {
   return 'roles';
 };
 
+
+// Brand Icons for Skills Hub
+function AntigravityIcon({ size = 18 }) {
+  return (
+    <img
+      src="/brand/antigravity-icon.png"
+      width={size}
+      height={size}
+      alt="Antigravity Logo"
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        objectFit: 'contain',
+        flexShrink: 0,
+        borderRadius: '4px'
+      }}
+    />
+  );
+}
+
+function OpenAIIcon({ size = 18, color = '#10b981' }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill={color}
+      style={{ flexShrink: 0, display: 'inline-block' }}
+      aria-hidden="true"
+    >
+      <path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073zM13.26 22.43a4.476 4.476 0 0 1-2.876-1.04l.141-.08 4.779-2.758a.795.795 0 0 0 .392-.681v-6.737l2.02 1.168a.071.071 0 0 1 .038.052v5.583a4.504 4.504 0 0 1-4.494 4.493zm-9.66-4.22a4.47 4.47 0 0 1-.534-3.037l.142.085 4.783 2.759a.771.771 0 0 0 .78 0l5.843-3.369v2.332a.08.08 0 0 1-.033.062l-4.832 2.79a4.5 4.5 0 0 1-6.15-1.622zm-1.89-9.52a4.484 4.484 0 0 1 2.34-1.996v5.665a.792.792 0 0 0 .39.681l5.84 3.37-2.02 1.168a.082.082 0 0 1-.071 0l-4.83-2.79a4.508 4.508 0 0 1-1.65-6.098zm15.908 3.73-5.84-3.37 2.02-1.168a.082.082 0 0 1 .071 0l4.83 2.79a4.5 4.5 0 0 1 1.65 6.098 4.494 4.494 0 0 1-2.34 2v-5.669a.783.783 0 0 0-.391-.681zm2.01-3.69a4.47 4.47 0 0 1 .533 3.037l-.142-.085-4.783-2.759a.771.771 0 0 0-.78 0l-5.843 3.369v-2.332a.08.08 0 0 1 .033-.062l4.832-2.79a4.5 4.5 0 0 1 6.15 1.632zM8.307 8.328l2.02-1.168a.076.076 0 0 1 .077 0l4.832 2.79a4.495 4.495 0 0 1 1.65 6.098 4.48 4.48 0 0 1-2.34 2v-5.665a.792.792 0 0 0-.39-.681zm.996 3.12 2.697-1.558 2.698 1.558v3.114l-2.698 1.558-2.697-1.558z" />
+    </svg>
+  );
+}
+
+function ClaudeIcon({ size = 18, color = '#D97757' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+      <circle cx="12" cy="12" r="3.5" fill={color} />
+      <path
+        d="M12 2.5v5.2m0 8.6v5.2M2.5 12h5.2m8.6 0h5.2M5.28 5.28l3.68 3.68m6.08 6.08l3.68 3.68M5.28 18.72l3.68-3.68m6.08-6.08l3.68-3.68"
+        stroke={color}
+        strokeWidth="3.2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export default function CombosView() {
   const [activeSubTab, setActiveSubTab] = useState(getInitialSubTab);
   const [combos, setCombos] = useState([]);
@@ -62,6 +111,8 @@ export default function CombosView() {
   const [skillsStatus, setSkillsStatus] = useState(null);
   const [syncingSkills, setSyncingSkills] = useState(false);
   const [syncToast, setSyncToast] = useState(null);
+  const [isSkillsModalOpen, setIsSkillsModalOpen] = useState(false);
+  const [activeSyncTarget, setActiveSyncTarget] = useState(null);
 
   // Providers & 1-Click Preset States
   const [providers, setProviders] = useState([]);
@@ -157,19 +208,28 @@ export default function CombosView() {
     }
   };
 
-  const handleSyncGlobalSkills = async () => {
+  const handleSyncGlobalSkills = async (target = 'antigravity') => {
     try {
       setSyncingSkills(true);
-      const res = await fetch('/api/skills/sync', { method: 'POST' });
-      if (res.ok) {
-        setSyncToast('Đã đồng bộ 4 Global Skills (/todo, /fix, /planning, /ask) sang ~/.gemini/config/skills/ thành công!');
+      setActiveSyncTarget(target);
+      const res = await fetch('/api/skills/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSyncToast(data.message);
         setTimeout(() => setSyncToast(null), 4000);
         await fetchSkillsStatus();
+      } else {
+        throw new Error(data.error || 'Sync failed');
       }
     } catch (e) {
       alert('Lỗi đồng bộ skills: ' + e.message);
     } finally {
       setSyncingSkills(false);
+      setActiveSyncTarget(null);
     }
   };
 
@@ -564,20 +624,23 @@ export default function CombosView() {
                 </span>
               )}
               <button
+                type="button"
                 className="btn btn-secondary"
-                onClick={handleSyncGlobalSkills}
-                disabled={syncingSkills}
+                onClick={() => setIsSkillsModalOpen(true)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
                   padding: '9px 16px',
-                  fontSize: '13px'
+                  fontSize: '13px',
+                  background: 'rgba(56, 189, 248, 0.08)',
+                  borderColor: 'rgba(56, 189, 248, 0.25)',
+                  color: '#38bdf8'
                 }}
-                title="Đồng bộ ngay 4 Global Skills (/todo, /fix, /planning, /ask) vào ~/.gemini/config/skills/"
+                title="Mở Trung Tâm Cài Đặt Skills & Rules cho từng nền tảng AI Agent (Antigravity, Codex, Claude)"
               >
-                <RefreshCw size={15} className={syncingSkills ? 'animate-spin' : ''} />
-                {syncingSkills ? 'Đang đồng bộ...' : 'Đồng Bộ Global Skills'}
+                <Zap size={15} className={syncingSkills ? 'animate-spin' : ''} />
+                <span>Cài Đặt Skills Theo Agent...</span>
               </button>
               <button
                 className="btn btn-primary"
@@ -2172,6 +2235,274 @@ export default function CombosView() {
       )}
 
       {/* CREATE / EDIT COMBO MODAL */}
+      
+      {/* AGENT SKILLS HUB MODAL (ON-DEMAND SELECTION) */}
+      {isSkillsModalOpen && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(8px)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div style={{
+            background: 'var(--bg-card, #0f1322)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            borderRadius: '16px',
+            width: '100%',
+            maxWidth: '680px',
+            maxHeight: '90vh',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.8)',
+            overflow: 'hidden'
+          }}>
+            {/* Header */}
+            <div style={{
+              padding: '18px 24px',
+              borderBottom: '1px solid var(--border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Zap size={18} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#fff' }}>
+                    Trung Tâm Cài Đặt Skills Cho AI Agent (On-Demand)
+                  </h3>
+                  <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '2px' }}>
+                    Chủ động cài đặt 4 Slash Commands (/todo, /fix, /planning, /ask) vào đúng ứng dụng bạn đang dùng
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn-icon"
+                onClick={() => setIsSkillsModalOpen(false)}
+                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '6px' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: '20px 24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ fontSize: '12.5px', color: '#cbd5e1', lineHeight: 1.5, background: 'rgba(255, 255, 255, 0.03)', padding: '10px 14px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                ℹ️ <strong>Bảo vệ ổ đĩa:</strong> Router không tự ý ghi file vào máy tính của bạn khi khởi động. Hãy bấm nút cài đặt tương ứng với công cụ AI bạn đang dùng:
+              </div>
+
+              {/* Platform 1: Antigravity */}
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid rgba(56, 189, 248, 0.2)',
+                borderRadius: '12px',
+                padding: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '16px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <AntigravityIcon size={24} />
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontWeight: '700', fontSize: '14px', color: '#fff' }}>Google Antigravity / Gemini</span>
+                      {skillsStatus?.targets?.antigravity?.installed ? (
+                        <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '999px', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                          ● Đã cài đặt
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '10px', fontWeight: '600', padding: '2px 8px', borderRadius: '999px', background: 'rgba(255, 255, 255, 0.06)', color: '#94a3b8' }}>
+                          ○ Chưa cài đặt
+                        </span>
+                      )}
+                      {skillsStatus?.targets?.antigravity?.detected && (
+                        <span style={{ fontSize: '10px', color: '#38bdf8' }}>(Phát hiện trên máy)</span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '3px', fontFamily: 'var(--font-mono)' }}>
+                      Đích: ~/.gemini/config/skills/
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  disabled={syncingSkills}
+                  onClick={() => handleSyncGlobalSkills('antigravity')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '12px',
+                    padding: '8px 14px',
+                    borderColor: 'rgba(56, 189, 248, 0.3)',
+                    color: '#38bdf8',
+                    flexShrink: 0
+                  }}
+                >
+                  <RefreshCw size={13} className={syncingSkills && activeSyncTarget === 'antigravity' ? 'animate-spin' : ''} />
+                  <span>{syncingSkills && activeSyncTarget === 'antigravity' ? 'Đang cài...' : 'Đồng Bộ Cho Antigravity'}</span>
+                </button>
+              </div>
+
+              {/* Platform 2: OpenAI Codex / ChatGPT */}
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid rgba(16, 185, 129, 0.2)',
+                borderRadius: '12px',
+                padding: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '16px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <OpenAIIcon size={22} color="#10b981" />
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontWeight: '700', fontSize: '14px', color: '#fff' }}>OpenAI Codex & ChatGPT</span>
+                      {skillsStatus?.targets?.codex?.installed ? (
+                        <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '999px', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                          ● Đã cài đặt
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '10px', fontWeight: '600', padding: '2px 8px', borderRadius: '999px', background: 'rgba(255, 255, 255, 0.06)', color: '#94a3b8' }}>
+                          ○ Chưa cài đặt
+                        </span>
+                      )}
+                      {skillsStatus?.targets?.codex?.detected && (
+                        <span style={{ fontSize: '10px', color: '#10b981' }}>(Phát hiện trên máy)</span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '3px', fontFamily: 'var(--font-mono)' }}>
+                      Đích: ~/.codex/skills/ & ~/.codex/AGENTS_RULES.md
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  disabled={syncingSkills}
+                  onClick={() => handleSyncGlobalSkills('codex')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '12px',
+                    padding: '8px 14px',
+                    borderColor: 'rgba(16, 185, 129, 0.3)',
+                    color: '#10b981',
+                    flexShrink: 0
+                  }}
+                >
+                  <RefreshCw size={13} className={syncingSkills && activeSyncTarget === 'codex' ? 'animate-spin' : ''} />
+                  <span>{syncingSkills && activeSyncTarget === 'codex' ? 'Đang cài...' : 'Đồng Bộ Cho Codex & GPT'}</span>
+                </button>
+              </div>
+
+              {/* Platform 3: Anthropic Claude Code */}
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid rgba(217, 119, 87, 0.2)',
+                borderRadius: '12px',
+                padding: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '16px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(217, 119, 87, 0.1)', border: '1px solid rgba(217, 119, 87, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <ClaudeIcon size={22} color="#D97757" />
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontWeight: '700', fontSize: '14px', color: '#fff' }}>Anthropic Claude Code</span>
+                      {skillsStatus?.targets?.claude?.installed ? (
+                        <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '999px', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                          ● Đã cài đặt
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '10px', fontWeight: '600', padding: '2px 8px', borderRadius: '999px', background: 'rgba(255, 255, 255, 0.06)', color: '#94a3b8' }}>
+                          ○ Chưa cài đặt
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '3px', fontFamily: 'var(--font-mono)' }}>
+                      Đích: ~/.claude/skills/
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  disabled={syncingSkills}
+                  onClick={() => handleSyncGlobalSkills('claude')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '12px',
+                    padding: '8px 14px',
+                    borderColor: 'rgba(217, 119, 87, 0.3)',
+                    color: '#D97757',
+                    flexShrink: 0
+                  }}
+                >
+                  <RefreshCw size={13} className={syncingSkills && activeSyncTarget === 'claude' ? 'animate-spin' : ''} />
+                  <span>{syncingSkills && activeSyncTarget === 'claude' ? 'Đang cài...' : 'Đồng Bộ Cho Claude Code'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{
+              padding: '14px 24px',
+              borderTop: '1px solid var(--border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'rgba(0, 0, 0, 0.2)'
+            }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={syncingSkills}
+                onClick={() => handleSyncGlobalSkills('all')}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px' }}
+              >
+                <Zap size={14} />
+                <span>{syncingSkills && activeSyncTarget === 'all' ? 'Đang cài đặt...' : 'Cài Đặt Cho Tất Cả Nền Tảng'}</span>
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setIsSkillsModalOpen(false)}
+                style={{ fontSize: '12.5px' }}
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showModal && (
         <div style={{
           position: 'fixed',

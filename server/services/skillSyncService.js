@@ -2,8 +2,51 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const GLOBAL_SKILLS_DIR = path.join(os.homedir(), '.gemini', 'config', 'skills');
+// Standard Directories per Agent Platform
+const TARGET_PATHS = {
+  antigravity: path.join(os.homedir(), '.gemini', 'config', 'skills'),
+  codex: path.join(os.homedir(), '.codex', 'skills'),
+  claude: path.join(os.homedir(), '.claude', 'skills')
+};
+
+const GLOBAL_SKILLS_DIR = TARGET_PATHS.antigravity;
 const AGENT_ROLES_PATH = path.join(os.homedir(), '.gemini', 'antigravity', 'combos.json');
+
+// Metadata & App Detection
+const AGENT_TARGETS_META = {
+  antigravity: {
+    id: 'antigravity',
+    name: 'Google Antigravity / Gemini',
+    description: 'Đồng bộ 4 Slash Commands (/todo, /fix, /planning, /ask) vào thư mục cấu hình chuẩn ~/.gemini/config/skills/',
+    path: TARGET_PATHS.antigravity,
+    icon: 'antigravity',
+    checkDirs: [
+      path.join(os.homedir(), '.gemini'),
+      path.join(os.homedir(), '.antigravity')
+    ]
+  },
+  codex: {
+    id: 'codex',
+    name: 'OpenAI Codex / ChatGPT',
+    description: 'Đồng bộ 4 Slash Commands vào ~/.codex/skills/ và xuất file quy tắc ~/.codex/AGENTS_RULES.md',
+    path: TARGET_PATHS.codex,
+    icon: 'codex',
+    checkDirs: [
+      path.join(os.homedir(), '.codex'),
+      path.join(os.homedir(), '.openai')
+    ]
+  },
+  claude: {
+    id: 'claude',
+    name: 'Anthropic Claude Code',
+    description: 'Đồng bộ 4 Slash Commands vào ~/.claude/skills/',
+    path: TARGET_PATHS.claude,
+    icon: 'claude',
+    checkDirs: [
+      path.join(os.homedir(), '.claude')
+    ]
+  }
+};
 
 function getDefaultRolesAndPolicy() {
   return {
@@ -89,22 +132,16 @@ function loadRoles() {
   return getDefaultRolesAndPolicy();
 }
 
-function syncAllGlobalSkills(rolesInput = null) {
+function generateSkillsTemplates(rolesInput = null) {
   const roles = rolesInput || loadRoles();
   const policy = roles.pipelinePolicy || {};
   const maxRetries = policy.maxLoopRetries || 3;
-  const requireApproval = policy.requirePlanApproval !== false;
   const plannerModel = roles.planner?.primaryModel || 'gemini-3.8-flash-high';
   const coderModel = roles.coder?.primaryModel || 'gemini-3.8-flash-high';
   const testerModel = roles.tester?.primaryModel || 'gemini-3.8-flash';
   const planningModel = policy.planningModel || plannerModel;
   const askModel = policy.askModel || roles.ask?.primaryModel || plannerModel;
 
-  fs.mkdirSync(GLOBAL_SKILLS_DIR, { recursive: true });
-
-  // 1. Skill /todo
-  const todoDir = path.join(GLOBAL_SKILLS_DIR, 'todo');
-  fs.mkdirSync(todoDir, { recursive: true });
   const todoContent = `---
 name: todo
 description: "Quy trình phát triển tính năng / sửa lỗi tuần hoàn khép kín do Brakthroonam Router điều phối (Lập Kế Hoạch -> Chờ Xác Nhận Duyệt -> Vòng lặp [Code -> Test -> Review] lặp tối đa ${maxRetries} lần -> Chốt ngắt mạch lần thứ ${maxRetries + 1} báo cáo RCA). Kích hoạt khi người dùng gõ /todo hoặc #todo."
@@ -130,8 +167,8 @@ Quy trình phát triển tính năng hoặc sửa lỗi chuẩn hóa được đ
 
 ## 2. Pha 2 — Cổng Duyệt Thông Minh (Adaptive Approval Gate)
 - **Cơ chế phân loại rủi ro tác vụ:**
-  + **Rủi Ro Cao (High Risk):** Tác động Database Schema, Auth/Bảo mật, Payment, API Schema, Routing Gateway core, xóa/di chuyển file cấu trúc $\rightarrow$ Sau khi xuất bản Kế Hoạch Chi Tiết ở Pha 1, **BẮT BUỘC DỪNG LẠI** và gọi công cụ \`ask_question\` để người dùng xác nhận duyệt kế hoạch trước khi code. Trong câu hỏi, tóm tắt rõ phương án cốt lõi (2-3 dòng) dẫn chiếu tới kế hoạch chi tiết phía trên; các lựa chọn options phải có ý nghĩa hành động rõ ràng. Tuyệt đối KHÔNG tự ý nhảy cóc sang viết code khi chưa nhận được xác nhận từ người dùng.
-  + **Rủi Ro Thấp (Low Risk / Auto-Approve):** Tinh chỉnh giao diện (UI/CSS/Styling), bố cục hiển thị, icons, responsive, văn bản/nhãn text, tài liệu docs/comments mà không đụng chạm đến contracts dữ liệu $\rightarrow$ Vẫn bắt buộc xuất bản Kế Hoạch Chi Tiết ở Pha 1 để người dùng theo dõi, sau đó **Tự Động Thông Qua (Auto-Approved)** chuyển sang Pha 3 (Lead Coder) nhằm triệt tiêu tối đa ma sát cho người dùng.
+  + **Rủi Ro Cao (High Risk):** Tác động Database Schema, Auth/Bảo mật, Payment, API Schema, Routing Gateway core, xóa/di chuyển file cấu trúc $\\rightarrow$ Sau khi xuất bản Kế Hoạch Chi Tiết ở Pha 1, **BẮT BUỘC DỪNG LẠI** và gọi công cụ \`ask_question\` để người dùng xác nhận duyệt kế hoạch trước khi code. Trong câu hỏi, tóm tắt rõ phương án cốt lõi (2-3 dòng) dẫn chiếu tới kế hoạch chi tiết phía trên; các lựa chọn options phải có ý nghĩa hành động rõ ràng. Tuyệt đối KHÔNG tự ý nhảy cóc sang viết code khi chưa nhận được xác nhận từ người dùng.
+  + **Rủi Ro Thấp (Low Risk / Auto-Approve):** Tinh chỉnh giao diện (UI/CSS/Styling), bố cục hiển thị, icons, responsive, văn bản/nhãn text, tài liệu docs/comments mà không đụng chạm đến contracts dữ liệu $\\rightarrow$ Vẫn bắt buộc xuất bản Kế Hoạch Chi Tiết ở Pha 1 để người dùng theo dõi, sau đó **Tự Động Thông Qua (Auto-Approved)** chuyển sang Pha 3 (Lead Coder) nhằm triệt tiêu tối đa ma sát cho người dùng.
   + **Tùy chọn can thiệp:** Dù ở mức rủi ro nào, nếu người dùng muốn sửa đổi phương án thì Brakthroonam Router luôn hỗ trợ gọi \`/planning\` để tái thiết kế mà không phá vỡ codebase.
 
 ## 3. Pha 3 — Vòng Tuần Hoàn Khép Kín: Code -> Test -> Review (Lặp Tối Đa ${maxRetries} Lần)
@@ -154,11 +191,7 @@ Khi dừng lại do Circuit Breaker ở lần thứ ${maxRetries + 1}, Agent ph�
 2. **Nguyên nhân gốc rễ (Root Cause Analysis - RCA):** Phân tích rõ tại sao qua ${maxRetries} lần sửa vẫn không thể fix được (xung đột kiến trúc, lỗi thư viện bên ngoài, hạn chế API hay logic mâu thuẫn...).
 3. **Bảng ma trận giải pháp:** Đưa ra 2–3 phương án xử lý khả thi (Option 1, 2, 3) kèm ưu/nhược điểm và rủi ro để người dùng cùng ngồi lại quyết định.
 `;
-  fs.writeFileSync(path.join(todoDir, 'SKILL.md'), todoContent, 'utf8');
 
-  // 2. Skill /fix
-  const fixDir = path.join(GLOBAL_SKILLS_DIR, 'fix');
-  fs.mkdirSync(fixDir, { recursive: true });
   const fixContent = `---
 name: fix
 description: "Quy trình sửa lỗi / khắc phục bug theo vết do Brakthroonam Router điều phối (Bỏ qua khâu lên plan mới, đi thẳng vào vòng lặp Code -> Test -> Review dựa trên nguyên nhân/kế hoạch đã có trước đó, lặp tối đa ${maxRetries} lần -> Chốt ngắt mạch lần thứ ${maxRetries + 1} báo cáo RCA). Kích hoạt khi người dùng gõ /fix hoặc #fix."
@@ -198,11 +231,7 @@ Agent dừng lại, không sửa tiếp, và xuất báo cáo 3 phần:
 2. **Phân tích vì sao 3 lần sửa vẫn thất bại (RCA):** Chỉ ra nguyên nhân sâu xa (giả định sai, bug trong core framework, xung đột phiên bản package...).
 3. **Đề xuất 2–3 phương án:** Đổi cách tiếp cận, thay thế thư viện, hoặc rollback để cùng người dùng thống nhất giải pháp.
 `;
-  fs.writeFileSync(path.join(fixDir, 'SKILL.md'), fixContent, 'utf8');
 
-  // 3. Skill /planning
-  const planningDir = path.join(GLOBAL_SKILLS_DIR, 'planning');
-  fs.mkdirSync(planningDir, { recursive: true });
   const planningContent = `---
 name: planning
 description: "Quy trình thiết kế kiến trúc và lập kế hoạch chuyên sâu do Brakthroonam Router điều phối (Chỉ gọi model Architect Planner, bóc tách luồng dữ liệu, phân tích Tư Duy Ngược Devil's Advocate, và dừng lại lưu Plan, KHÔNG viết code). Kích hoạt khi người dùng gõ /planning hoặc #planning."
@@ -234,11 +263,7 @@ Bản kế hoạch do \`/planning\` sinh ra bắt buộc bao gồm:
 - **CHỈ LẬP KẾ HOẠCH, TUYỆT ĐỐI KHÔNG VIẾT CODE:** Sau khi hoàn thiện bản kế hoạch, Agent dừng lại, lưu trữ kế hoạch dưới dạng file Artifact hoặc tài liệu markdown trong thư mục \`plans/\` hoặc \`docs/\`.
 - Để tiến hành viết code theo kế hoạch này, người dùng sẽ kích hoạt lệnh \`/todo\` (để chạy có duyệt) hoặc \`/fix\` (để sửa theo plan).
 `;
-  fs.writeFileSync(path.join(planningDir, 'SKILL.md'), planningContent, 'utf8');
 
-  // 4. Skill /ask
-  const askDir = path.join(GLOBAL_SKILLS_DIR, 'ask');
-  fs.mkdirSync(askDir, { recursive: true });
   const askContent = `---
 name: ask
 description: "Tư vấn kỹ thuật và kiến trúc đa chiều do Brakthroonam Router điều phối (Phân tích bối cảnh, tranh luận qua 4 chuyên gia: Systems Designer, Technology Strategist, Scalability Consultant, Risk Analyst, tuyệt đối không sửa code). Kích hoạt khi người dùng gõ /ask hoặc #ask."
@@ -270,56 +295,122 @@ Mọi phản hồi từ \`/ask\` phải ngắn gọn, sắc bén, thẳng thắn
 ## 4. Ràng Buộc Tuyệt Đối
 - **CHẾ ĐỘ READ-ONLY:** Lệnh \`/ask\` chỉ dành cho phân tích, nghiên cứu và tư vấn; **TUYỆT ĐỐI CẤM SỬA ĐỔI HOẶC TẠO MỚI MÃ NGUỒN**.
 `;
-  fs.writeFileSync(path.join(askDir, 'SKILL.md'), askContent, 'utf8');
+
+  return {
+    todo: todoContent,
+    fix: fixContent,
+    planning: planningContent,
+    ask: askContent
+  };
+}
+
+function writeSkillsToDirectory(baseDir, templates) {
+  fs.mkdirSync(baseDir, { recursive: true });
+  for (const [skillName, content] of Object.entries(templates)) {
+    const dir = path.join(baseDir, skillName);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'SKILL.md'), content, 'utf8');
+  }
+}
+
+// Synchronize skills to a specific platform target on-demand
+function syncSkills(target = 'antigravity', rolesInput = null) {
+  const templates = generateSkillsTemplates(rolesInput);
+  const results = {};
+
+  const syncTarget = (key) => {
+    const meta = AGENT_TARGETS_META[key];
+    if (!meta) return null;
+    writeSkillsToDirectory(meta.path, templates);
+
+    // If codex, also export consolidated rules file for ChatGPT / Codex system instructions
+    if (key === 'codex') {
+      const codexRulesDir = path.join(os.homedir(), '.codex');
+      fs.mkdirSync(codexRulesDir, { recursive: true });
+      const combinedRules = `# BRAKTHROONAM ROUTER AGENT COMMAND RULES (/todo, /fix, /planning, /ask)\n\n` +
+        `## 1. /todo (Feature Pipeline)\n${templates.todo}\n\n` +
+        `## 2. /fix (Bug Fixing Loop)\n${templates.fix}\n\n` +
+        `## 3. /planning (Deep Architecture)\n${templates.planning}\n\n` +
+        `## 4. /ask (Multi-Perspective Technical Consultation)\n${templates.ask}\n`;
+      fs.writeFileSync(path.join(codexRulesDir, 'AGENTS_RULES.md'), combinedRules, 'utf8');
+    }
+
+    return {
+      target: key,
+      name: meta.name,
+      path: meta.path,
+      syncedSkills: Object.keys(templates),
+      timestamp: new Date().toISOString()
+    };
+  };
+
+  if (target === 'all') {
+    for (const key of Object.keys(AGENT_TARGETS_META)) {
+      results[key] = syncTarget(key);
+    }
+  } else if (AGENT_TARGETS_META[target]) {
+    results[target] = syncTarget(target);
+  } else {
+    // Default to antigravity
+    results.antigravity = syncTarget('antigravity');
+  }
 
   return {
     success: true,
-    syncedSkills: ['todo', 'fix', 'planning', 'ask'],
-    globalPath: GLOBAL_SKILLS_DIR,
-    timestamp: new Date().toISOString()
+    results
   };
 }
 
+// Backward compatible signature
+function syncAllGlobalSkills(rolesInput = null) {
+  return syncSkills('antigravity', rolesInput);
+}
+
+// Get comprehensive status of all agent targets
 function getGlobalSkillsStatus() {
-  const skills = ['todo', 'fix', 'planning', 'ask'];
-  const status = {};
-  for (const s of skills) {
-    const skillFile = path.join(GLOBAL_SKILLS_DIR, s, 'SKILL.md');
-    if (fs.existsSync(skillFile)) {
-      const stat = fs.statSync(skillFile);
-      status[s] = {
-        installed: true,
-        mtime: stat.mtimeMs,
-        path: skillFile
-      };
-    } else {
-      status[s] = {
-        installed: false,
-        path: skillFile
-      };
-    }
+  const targets = {};
+  for (const [key, meta] of Object.entries(AGENT_TARGETS_META)) {
+    const isDetected = meta.checkDirs.some(d => fs.existsSync(d));
+    const skillSample = path.join(meta.path, 'todo', 'SKILL.md');
+    const isInstalled = fs.existsSync(skillSample);
+    
+    targets[key] = {
+      id: key,
+      name: meta.name,
+      description: meta.description,
+      path: meta.path,
+      icon: meta.icon,
+      detected: isDetected,
+      installed: isInstalled,
+      skills: ['todo', 'fix', 'planning', 'ask'],
+      lastSync: isInstalled ? fs.statSync(skillSample).mtimeMs : null
+    };
   }
+
   return {
-    globalSkillsDir: GLOBAL_SKILLS_DIR,
-    status
+    targets,
+    legacy: {
+      globalSkillsDir: GLOBAL_SKILLS_DIR,
+      isInstalled: targets.antigravity.installed
+    }
   };
 }
 
+// Empty startup hook - pure startup mode (No unsolicited file writes)
 function initGlobalSkillsOnStartup() {
-  try {
-    const roles = loadRoles();
-    syncAllGlobalSkills(roles);
-    console.log(`[Global Skills] Đã đồng bộ 4 Global Skills (/todo, /fix, /planning, /ask) tại ${GLOBAL_SKILLS_DIR}`);
-  } catch (err) {
-    console.error('[Global Skills] Lỗi khởi tạo Global Skills:', err.message);
-  }
+  // PURE STARTUP: We intentionally do NOT auto-write skills to the filesystem on server boot.
+  // This guarantees zero filesystem pollution on clean machines/VMs.
+  // Skills are installed on-demand when the user chooses to sync via the Web Dashboard.
 }
 
 module.exports = {
   GLOBAL_SKILLS_DIR,
   AGENT_ROLES_PATH,
+  TARGET_PATHS,
+  AGENT_TARGETS_META,
   getDefaultRolesAndPolicy,
   loadRoles,
+  syncSkills,
   syncAllGlobalSkills,
   getGlobalSkillsStatus,
   initGlobalSkillsOnStartup

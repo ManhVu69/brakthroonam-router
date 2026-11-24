@@ -429,6 +429,7 @@ router.delete('/combos/:id', (req, res) => {
 const {
   AGENT_ROLES_PATH,
   loadRoles,
+  syncSkills,
   syncAllGlobalSkills,
   getGlobalSkillsStatus
 } = require('../services/skillSyncService');
@@ -481,10 +482,17 @@ router.put('/agent-roles', (req, res) => {
       db.prepare("DELETE FROM combos WHERE name IN ('combo-planner', 'combo-coder', 'combo-tester')").run();
     } catch (_) {}
 
-    // Tự động đồng bộ toàn cục 4 Global Skills (/todo, /fix, /planning, /ask)
-    syncAllGlobalSkills(roles);
+    // Chỉ cập nhật lại các targets mà người dùng đã kích hoạt/đồng bộ từ trước
+    const currentStatus = getGlobalSkillsStatus();
+    if (currentStatus && currentStatus.targets) {
+      for (const [key, target] of Object.entries(currentStatus.targets)) {
+        if (target.installed) {
+          syncSkills(key, roles);
+        }
+      }
+    }
 
-    res.json({ success: true, message: 'Đã lưu và đồng bộ toàn cục cho Antigravity & Agent AI thành công!', roles });
+    res.json({ success: true, message: 'Đã lưu cấu hình Agent Roles thành công!', roles });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -501,8 +509,19 @@ router.get('/skills/status', (req, res) => {
 
 router.post('/skills/sync', (req, res) => {
   try {
-    const result = syncAllGlobalSkills();
-    res.json({ success: true, message: 'Đã đồng bộ lại toàn bộ 4 Global Skills!', result });
+    const target = req.body?.target || 'antigravity';
+    const result = syncSkills(target);
+    let targetName = 'Google Antigravity';
+    if (target === 'codex') targetName = 'OpenAI Codex / ChatGPT';
+    else if (target === 'claude') targetName = 'Anthropic Claude Code';
+    else if (target === 'all') targetName = 'Tất cả nền tảng AI Agent';
+
+    res.json({
+      success: true,
+      message: `Đã đồng bộ 4 Skills cho ${targetName} thành công!`,
+      target,
+      result
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -11,8 +11,9 @@ const proxyRoutes = require('./routes/proxyRoutes');
 function createApp() {
   const app = express();
 
-  // Khởi tạo và đồng bộ 4 Global Skills (/todo, /fix, /planning, /ask) cho máy tính này
-  initGlobalSkillsOnStartup();
+  // Pure Startup: Không tự ý ghi file Global Skills khi boot để tránh ô nhiễm filesystem máy ảo/máy người dùng
+  // Skills được kích hoạt theo nhu cầu (On-Demand) từ Web Dashboard qua module Agent Skills Hub
+  // initGlobalSkillsOnStartup();
 
   // Khởi động Daemon theo dõi live chuyển đổi tài khoản Antigravity IDE (2s polling)
   startAntigravityWatcher();
