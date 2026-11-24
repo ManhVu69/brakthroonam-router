@@ -411,14 +411,22 @@ function startMitmServer() {
   mitmServer.on('error', (err) => {
     console.error('[Brakthroonam MITM] Server Error on port 443:', err.message);
     isMitmRunning = false;
+    try { mitmServer.close(); } catch (_) {}
   });
 
   return new Promise((resolve) => {
-    mitmServer.listen(443, '127.0.0.1', () => {
-      isMitmRunning = true;
-      console.log('🚀 [Brakthroonam MITM] Listening on 127.0.0.1:443 (Antigravity Intercept Active)');
-      resolve({ success: true, message: 'Brakthroonam MITM Proxy đang chạy trên cổng 443.' });
+    mitmServer.once('error', (err) => {
+      resolve({ success: false, error: err.message });
     });
+    try {
+      mitmServer.listen(443, '127.0.0.1', () => {
+        isMitmRunning = true;
+        console.log('🚀 [Brakthroonam MITM] Listening on 127.0.0.1:443 (Antigravity Intercept Active)');
+        resolve({ success: true, message: 'Brakthroonam MITM Proxy đang chạy trên cổng 443.' });
+      });
+    } catch (err) {
+      resolve({ success: false, error: err.message });
+    }
   });
 }
 

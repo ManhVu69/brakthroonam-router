@@ -85,9 +85,11 @@ function startServer(port = 20129, host = '0.0.0.0') {
       console.log(`📡 OpenAI-Compatible API: http://localhost:${port}/v1`);
       console.log(`🌐 Dashboard: http://localhost:${port}\n`);
 
-      // Luôn tự động khởi động MITM Proxy cổng 443 sẵn sàng đón bắt khi cần
+      // Khoi dong MITM Proxy cong 443 neu da duoc nguoi dung cau hinh hosts truoc do
       try {
-        antigravityMitmService.startMitmServer();
+        if (antigravityMitmService.isHostsConfigured()) {
+          antigravityMitmService.startMitmServer();
+        }
       } catch (err) {
         console.warn('[Brakthroonam Router] Warning starting MITM background:', err.message);
       }
