@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
-  RotateCw, RotateCcw, Clock, Zap, Pencil, Trash2, Eye, EyeOff,
+  RotateCw, RotateCcw, Clock, Zap, Pencil, Trash2, Eye, EyeOff, Layers,
   Hourglass, Ban, CheckCircle2, ChevronDown, RefreshCw, Copy, Check,
   Activity, Gauge, ShieldCheck, ArrowRight, ExternalLink, SlidersHorizontal, BookOpen
 } from 'lucide-react';
@@ -24,23 +24,19 @@ function AntigravityIcon({ size = 20 }) {
   );
 }
 
-// 2. OpenAI Official Rosette Knot Logo (from user upload /brand/openai-icon.png)
-function OpenAIIcon({ size = 20 }) {
+// 2. OpenAI Official Mathematical Vector Rosette SVG (Smooth vector curves, 0% pixelation, no sharp corner artifacts)
+function OpenAIIcon({ size = 20, color = '#10b981' }) {
   return (
-    <img
-      src="/brand/openai-icon.png"
+    <svg
       width={size}
       height={size}
-      alt="OpenAI Logo"
-      style={{
-        width: `${size}px`,
-        height: `${size}px`,
-        objectFit: 'contain',
-        filter: 'invert(1)',
-        mixBlendMode: 'screen',
-        flexShrink: 0
-      }}
-    />
+      viewBox="0 0 24 24"
+      fill={color}
+      style={{ flexShrink: 0, display: 'inline-block' }}
+      aria-hidden="true"
+    >
+      <path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073zM13.26 22.43a4.476 4.476 0 0 1-2.876-1.04l.141-.08 4.779-2.758a.795.795 0 0 0 .392-.681v-6.737l2.02 1.168a.071.071 0 0 1 .038.052v5.583a4.504 4.504 0 0 1-4.494 4.493zm-9.66-4.22a4.47 4.47 0 0 1-.534-3.037l.142.085 4.783 2.759a.771.771 0 0 0 .78 0l5.843-3.369v2.332a.08.08 0 0 1-.033.062l-4.832 2.79a4.5 4.5 0 0 1-6.15-1.622zm-1.89-9.52a4.484 4.484 0 0 1 2.34-1.996v5.665a.792.792 0 0 0 .39.681l5.84 3.37-2.02 1.168a.082.082 0 0 1-.071 0l-4.83-2.79a4.508 4.508 0 0 1-1.65-6.098zm15.908 3.73-5.84-3.37 2.02-1.168a.082.082 0 0 1 .071 0l4.83 2.79a4.5 4.5 0 0 1 1.65 6.098 4.494 4.494 0 0 1-2.34 2v-5.669a.783.783 0 0 0-.391-.681zm2.01-3.69a4.47 4.47 0 0 1 .533 3.037l-.142-.085-4.783-2.759a.771.771 0 0 0-.78 0l-5.843 3.369v-2.332a.08.08 0 0 1 .033-.062l4.832-2.79a4.5 4.5 0 0 1 6.15 1.632zM8.307 8.328l2.02-1.168a.076.076 0 0 1 .077 0l4.832 2.79a4.495 4.495 0 0 1 1.65 6.098 4.48 4.48 0 0 1-2.34 2v-5.665a.792.792 0 0 0-.39-.681zm.996 3.12 2.697-1.558 2.698 1.558v3.114l-2.698 1.558-2.697-1.558z" />
+    </svg>
   );
 }
 
@@ -56,6 +52,87 @@ function ClaudeIcon({ size = 20, color = '#D97757' }) {
       />
       <circle cx="12" cy="12" r="2.2" fill={color} />
     </svg>
+  );
+}
+
+
+// 4. Custom Glassmorphism Dropdown Select Component (Replaces native OS <select>)
+function GlassSelect({ value, onChange, options, icon: Icon, placeholder = 'Chọn...' }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') setIsOpen(false);
+    }
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
+  const selectedOption = options.find((opt) => opt.value === value) || options[0];
+
+  return (
+    <div className="custom-glass-select-container" ref={containerRef}>
+      <button
+        type="button"
+        className={`custom-glass-select-trigger ${isOpen ? 'is-open' : ''}`}
+        onClick={() => setIsOpen(!isOpen)}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+      >
+        <div className="select-trigger-content">
+          {selectedOption?.icon ? (
+            <span className="select-option-icon">{selectedOption.icon}</span>
+          ) : (
+            Icon && <Icon size={14} className="select-default-icon" />
+          )}
+          <span className="select-trigger-label">{selectedOption ? selectedOption.label : placeholder}</span>
+        </div>
+        <ChevronDown size={13} className={`select-chevron ${isOpen ? 'rotated' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="custom-glass-select-menu" role="listbox">
+          {options.map((opt) => {
+            const isSelected = opt.value === value;
+            return (
+              <div
+                key={opt.value}
+                role="option"
+                aria-selected={isSelected}
+                className={`custom-glass-select-item ${isSelected ? 'selected' : ''}`}
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+              >
+                <div className="select-item-left">
+                  {opt.icon && <span className="select-option-icon">{opt.icon}</span>}
+                  <span className="select-item-label">{opt.label}</span>
+                </div>
+                <div className="select-item-right">
+                  {opt.count !== undefined && (
+                    <span className="select-item-count">{opt.count}</span>
+                  )}
+                  {isSelected && <Check size={13} className="select-item-check" />}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -240,6 +317,58 @@ export default function QuotaTrackerView() {
     }));
   };
 
+
+  // Options for custom GlassSelect dropdowns
+  const providerOptions = useMemo(() => {
+    const totalCount = accounts.length;
+    const codexCount = accounts.filter(a => a.provider === 'codex').length;
+    const antiCount = accounts.filter(a => a.provider === 'antigravity').length;
+
+    return [
+      {
+        value: 'all',
+        label: `Tất cả Provider (${totalCount})`,
+        icon: <Layers size={14} color="#38bdf8" />,
+        count: totalCount
+      },
+      {
+        value: 'codex',
+        label: 'OpenAI Codex',
+        icon: <OpenAIIcon size={14} color="#10b981" />,
+        count: codexCount
+      },
+      {
+        value: 'antigravity',
+        label: 'Google Antigravity',
+        icon: <AntigravityIcon size={14} />,
+        count: antiCount
+      }
+    ];
+  }, [accounts]);
+
+  const statusOptions = useMemo(() => {
+    const activeCount = accounts.filter(a => a.isActive).length;
+    const pausedCount = accounts.filter(a => !a.isActive).length;
+
+    return [
+      {
+        value: 'all',
+        label: 'Tất cả trạng thái',
+        icon: <Activity size={14} color="#34d399" />
+      },
+      {
+        value: 'active',
+        label: `Đang hoạt động (${activeCount})`,
+        icon: <span className="status-dot green" />
+      },
+      {
+        value: 'turned-off',
+        label: `Tạm tắt (${pausedCount})`,
+        icon: <span className="status-dot gray" />
+      }
+    ];
+  }, [accounts]);
+
   // Filter and sort accounts
   const displayedAccounts = useMemo(() => {
     let list = [...accounts];
@@ -404,31 +533,23 @@ export default function QuotaTrackerView() {
       {/* 3. Toolbar / Filters Bar */}
       <div className="quota-toolbar">
         <div className="quota-toolbar-group">
-          {/* Provider Filter */}
-          <div className="quota-select-box">
-            <select
-              value={providerFilter}
-              onChange={(e) => setProviderFilter(e.target.value)}
-            >
-              <option value="all">Tất cả Provider</option>
-              <option value="antigravity">Google Gemini / Antigravity</option>
-              <option value="codex">OpenAI Codex</option>
-            </select>
-            <ChevronDown size={12} className="select-arrow" />
-          </div>
+          {/* Provider Filter - Custom Glassmorphism Dropdown */}
+          <GlassSelect
+            value={providerFilter}
+            onChange={setProviderFilter}
+            options={providerOptions}
+            icon={Layers}
+            placeholder="Lọc Provider..."
+          />
 
-          {/* Status Filter */}
-          <div className="quota-select-box">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="active">Đang hoạt động (Active)</option>
-              <option value="turned-off">Tạm tắt (Paused)</option>
-            </select>
-            <ChevronDown size={12} className="select-arrow" />
-          </div>
+          {/* Status Filter - Custom Glassmorphism Dropdown */}
+          <GlassSelect
+            value={statusFilter}
+            onChange={setStatusFilter}
+            options={statusOptions}
+            icon={Activity}
+            placeholder="Lọc trạng thái..."
+          />
 
           {/* Expiring First Button */}
           <button
@@ -595,10 +716,10 @@ export default function QuotaTrackerView() {
                 {/* Card Head */}
                 <div className="quota-card-head">
                   <div className="quota-card-identity">
-                    <div className="quota-brand-badge">
+                    <div className={`quota-brand-badge ${isCodex ? "codex" : (isAntigravity ? "antigravity" : "")}`}>
+                      {isCodex && <OpenAIIcon size={20} color="#10b981" />}
                       {isAntigravity && <AntigravityIcon size={20} />}
-                      {isCodex && <OpenAIIcon size={20} />}
-                      {isClaude && <ClaudeIcon size={20} color="#D97757" />}
+                                            {isClaude && <ClaudeIcon size={20} color="#D97757" />}
                     </div>
                     <div className="quota-info-meta">
                       <div className="quota-provider-title">
