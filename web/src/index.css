@@ -1730,16 +1730,21 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   padding-top: 13px;
   margin-top: auto;
 }
 
 .card-spec-text {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--text-dim);
   font-family: var(--font-mono);
   letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .card-action-btn {
@@ -1750,7 +1755,9 @@ input:checked + .slider:before {
   color: #60a5fa;
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: all 0.15s ease;
 }
 

@@ -436,10 +436,10 @@ export default function GatewayProvidersView({ status, onStatusChange }) {
 
               {/* Footer */}
               <div className="card-footer-v2">
-                <span className="card-spec-text">
-                  {isGemini && 'OAuth 2.0 • 2.0M Context • 2-Tier'}
-                  {isCodex && 'Session Token • Sticky Affinity'}
-                  {isClaude && 'Upstream Direct • Zero Retain'}
+                <span className="card-spec-text" title={isGemini ? 'OAuth 2.0 • 2.0M Context • 2-Tier Fallback' : isCodex ? 'Session Token • Sticky Affinity' : 'Upstream Direct • Zero Retain'}>
+                  {isGemini && 'OAuth 2.0 • 2.0M • 2-Tier'}
+                  {isCodex && 'Session Token • Sticky'}
+                  {isClaude && 'Upstream Direct • 0-Retain'}
                 </span>
                 <span className="card-action-btn">
                   Quản lý tài khoản <ArrowUpRight size={13} />
