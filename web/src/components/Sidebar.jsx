@@ -5,7 +5,7 @@ export default function Sidebar({ currentTab, setCurrentTab, status }) {
   const [copied, setCopied] = useState(false);
 
   const navItems = [
-    { id: 'gateway', label: 'Gateway & Providers', icon: Network },
+    { id: 'provider', label: 'Provider', icon: Network },
     { id: 'quotas', label: 'Quota Tracker', icon: Gauge },
     { id: 'combos', label: 'Combos & Roles', icon: Cpu },
     { id: 'tasks', label: 'Task Execution', icon: ListTodo },

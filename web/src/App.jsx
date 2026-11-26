@@ -9,12 +9,13 @@ import SettingsView from './components/SettingsView';
 import DonateView from './components/DonateView';
 import ErrorBoundary from './components/ErrorBoundary';
 
-const VALID_TABS = ['gateway', 'quotas', 'combos', 'tasks', 'usage', 'settings', 'donate'];
+const VALID_TABS = ['provider', 'gateway', 'quotas', 'combos', 'tasks', 'usage', 'settings', 'donate'];
 
 function getTabFromHash() {
   const raw = window.location.hash.replace(/^#\/?/, '').toLowerCase();
   const root = raw.split('/')[0].split('?')[0];
-  return VALID_TABS.includes(root) ? root : 'gateway';
+  if (root === 'gateway') return 'provider';
+  return VALID_TABS.includes(root) ? root : 'provider';
 }
 
 export default function App() {
@@ -55,7 +56,7 @@ export default function App() {
   };
 
   return (
-    <ErrorBoundary onNavigateHome={() => handleSelectTab('gateway')}>
+    <ErrorBoundary onNavigateHome={() => handleSelectTab('provider')}>
       <div className="app-container">
         <Sidebar
           currentTab={currentTab}
@@ -64,8 +65,8 @@ export default function App() {
         />
 
         <main className="main-content">
-          <ErrorBoundary key={currentTab} onNavigateHome={() => handleSelectTab('gateway')}>
-            {currentTab === 'gateway' && (
+          <ErrorBoundary key={currentTab} onNavigateHome={() => handleSelectTab('provider')}>
+            {(currentTab === 'provider' || currentTab === 'gateway') && (
               <GatewayProvidersView
                 status={status}
                 onStatusChange={fetchStatus}

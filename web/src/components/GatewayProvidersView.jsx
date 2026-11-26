@@ -97,13 +97,6 @@ export default function GatewayProvidersView({ status, onStatusChange }) {
   const [loading, setLoading] = useState(true);
   const [probingAll, setProbingAll] = useState(false);
   const [copiedEndpoint, setCopiedEndpoint] = useState(false);
-  const [copiedIdeCode, setCopiedIdeCode] = useState(false);
-  const [selectedIde, setSelectedIde] = useState('cursor');
-  const [pingResult, setPingResult] = useState(null);
-  const [pingLoading, setPingLoading] = useState(false);
-  const [clientsStatus, setClientsStatus] = useState(null);
-  const [codexLoading, setCodexLoading] = useState(false);
-  const [antigravityLoading, setAntigravityLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
 
   useEffect(() => {
@@ -113,7 +106,7 @@ export default function GatewayProvidersView({ status, onStatusChange }) {
   useEffect(() => {
     const checkHash = () => {
       const hash = window.location.hash;
-      const m = hash.match(/^#gateway\/([a-zA-Z0-9_-]+)/);
+      const m = hash.match(/^#(?:gateway|provider)\/([a-zA-Z0-9_-]+)/);
       if (m && providers.length > 0) {
         const found = providers.find(p => p.id === m[1]);
         if (found) {
@@ -131,69 +124,9 @@ export default function GatewayProvidersView({ status, onStatusChange }) {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const fetchClientsStatus = async () => {
-    try {
-      const res = await fetch('/api/clients/status');
-      if (res.ok) {
-        const data = await res.json();
-        setClientsStatus(data);
-      }
-    } catch {}
-  };
-
-  const handleConfigureCodex = async () => {
-    try {
-      setCodexLoading(true);
-      const res = await fetch('/api/clients/codex/configure', { method: 'POST' });
-      const data = await res.json();
-      if (data.success) {
-        showToast(data.message || 'Đã cấu hình Codex 1-Click thành công!');
-        await fetchClientsStatus();
-      } else {
-        throw new Error(data.error || 'Cấu hình thất bại');
-      }
-    } catch (e) {
-      showToast('Lỗi cấu hình Codex: ' + e.message);
-    } finally {
-      setCodexLoading(false);
-    }
-  };
-
-  const handleConfigureAntigravity = async () => {
-    try {
-      setAntigravityLoading(true);
-      // Gọi Windows Custom Protocol Handler để kích hoạt UAC trực tiếp từ Desktop Session
-      window.location.href = 'brakthroonam://setup-antigravity';
-
-      const res = await fetch('/api/clients/antigravity/configure', { method: 'POST' });
-      const data = await res.json();
-      if (data.success) {
-        showToast('👉 Hãy bấm "Mở Brakthroonam Router" trên trình duyệt và chọn "Yes" trên hộp thoại UAC!');
-        await fetchClientsStatus();
-
-        // Tự động kiểm tra định kỳ 1.5 giây/lần để cập nhật badge xanh khi UAC được chấp nhận
-        let attempts = 0;
-        const intervalId = setInterval(async () => {
-          attempts++;
-          const updated = await fetchClientsStatus();
-          if (updated?.antigravity?.hostsConfigured || attempts >= 20) {
-            clearInterval(intervalId);
-          }
-        }, 1500);
-      } else {
-        throw new Error(data.error || 'Kích hoạt thất bại');
-      }
-    } catch (e) {
-      showToast('Lỗi kích hoạt Antigravity: ' + e.message);
-    } finally {
-      setAntigravityLoading(false);
-    }
-  };
-
   const fetchData = async () => {
     try {
       setLoading(true);
-      fetchClientsStatus();
       const res = await fetch('/api/providers');
       const data = await res.json();
       setProviders(data);
@@ -227,34 +160,6 @@ export default function GatewayProvidersView({ status, onStatusChange }) {
     setTimeout(() => setCopiedEndpoint(false), 2000);
   };
 
-  const handleRunPingTest = async () => {
-    setPingLoading(true);
-    const start = performance.now();
-    try {
-      const res = await fetch('/v1/models');
-      const data = await res.json();
-      const latency = Math.round(performance.now() - start);
-      setPingResult({
-        ok: res.ok,
-        status: res.status,
-        latency,
-        count: data?.data?.length || 31,
-        timestamp: new Date().toLocaleTimeString()
-      });
-    } catch (err) {
-      const latency = Math.round(performance.now() - start);
-      setPingResult({
-        ok: false,
-        status: 500,
-        latency,
-        error: err.message,
-        timestamp: new Date().toLocaleTimeString()
-      });
-    } finally {
-      setPingLoading(false);
-    }
-  };
-
   const handleProbeAll = async () => {
     setProbingAll(true);
     try {
@@ -273,7 +178,7 @@ export default function GatewayProvidersView({ status, onStatusChange }) {
         provider={selectedProvider}
         onClose={() => {
           setSelectedProvider(null);
-          window.location.hash = '#gateway';
+          window.location.hash = '#provider';
           fetchData();
         }}
         onUpdated={fetchData}
@@ -286,66 +191,6 @@ export default function GatewayProvidersView({ status, onStatusChange }) {
   const totalModels = providers.reduce((acc, p) => acc + (p.models?.length || 0), 0);
   const geminiAccounts = accountsMap['gemini'] || [];
   const codexAccounts = accountsMap['codex'] || [];
-
-  // IDE Config Data
-  const ideSnippets = {
-    cursor: {
-      label: 'OpenAI Base URL',
-      display: (
-        <>
-          <span className="var">Base URL:</span> <span className="str">{endpointUrl}</span> &nbsp;&nbsp;|&nbsp;&nbsp; 
-          <span className="var">API Key:</span> <span className="str">dummy-key</span> &nbsp;&nbsp;|&nbsp;&nbsp; 
-          <span className="var">Model:</span> <span className="kw">gemini-2.5-pro</span>
-        </>
-      ),
-      raw: endpointUrl
-    },
-    claude: {
-      label: 'Claude Code Env',
-      display: (
-        <>
-          <span className="kw">export</span> <span className="var">ANTHROPIC_BASE_URL</span>=<span className="str">"{endpointUrl}"</span> && <span className="kw">export</span> <span className="var">ANTHROPIC_API_KEY</span>=<span className="str">"dummy"</span>
-        </>
-      ),
-      raw: `export ANTHROPIC_BASE_URL="${endpointUrl}" && export ANTHROPIC_API_KEY="dummy"`
-    },
-    cline: {
-      label: 'Cline / Roo Settings',
-      display: (
-        <>
-          <span className="var">API Provider:</span> <span className="str">OpenAI Compatible</span> &nbsp;&nbsp;|&nbsp;&nbsp; 
-          <span className="var">Base URL:</span> <span className="str">{endpointUrl}</span>
-        </>
-      ),
-      raw: endpointUrl
-    },
-    windsurf: {
-      label: 'Windsurf Config',
-      display: (
-        <>
-          <span className="var">OpenAI Endpoint:</span> <span className="str">{endpointUrl}</span> &nbsp;&nbsp;|&nbsp;&nbsp; 
-          <span className="var">Key:</span> <span className="str">dummy</span>
-        </>
-      ),
-      raw: endpointUrl
-    },
-    curl: {
-      label: 'Raw Terminal Request',
-      display: (
-        <>
-          <span className="kw">curl</span> -s <span className="str">{endpointUrl}/models</span> | jq .
-        </>
-      ),
-      raw: `curl -s ${endpointUrl}/models | jq .`
-    }
-  };
-
-  const handleCopyIdeSnippet = () => {
-    const raw = ideSnippets[selectedIde]?.raw || endpointUrl;
-    navigator.clipboard.writeText(raw);
-    setCopiedIdeCode(true);
-    setTimeout(() => setCopiedIdeCode(false), 2000);
-  };
 
   return (
     <div className="gateway-shell">
@@ -384,12 +229,12 @@ export default function GatewayProvidersView({ status, onStatusChange }) {
           </div>
           <div className="brand-info">
             <h1>
-              Gateway &amp; AI Providers
+              Provider
               <span className="live-chip">
                 <span className="pulse-dot"></span> Online :{status?.port || 20129}
               </span>
             </h1>
-            <p>Hạ tầng định tuyến API, tự động cân bằng tải &amp; xoay tua tài khoản Google Gemini, OpenAI Codex &amp; Anthropic Claude</p>
+            <p>Hạ tầng quản trị nhà cung cấp AI &amp; điều phối xoay tua tài khoản Google Gemini, OpenAI Codex &amp; Anthropic Claude</p>
           </div>
         </div>
 
@@ -488,246 +333,7 @@ export default function GatewayProvidersView({ status, onStatusChange }) {
         </div>
       </section>
 
-      {/* 3. Coding Agent & IDE Quick-Launch Hub */}
-      <section className="agent-launchpad">
-        <div className="launchpad-head">
-          <div className="launchpad-title">
-            <div className="launchpad-title-icon">
-              <Terminal size={18} />
-            </div>
-            <div>
-              <h2>Tích Hợp 1-Click Cho Coding Assistant &amp; IDE</h2>
-              <p>Bấm nút 1-Click để hệ thống tự động cấu hình ứng dụng trên máy của bạn kết nối vào Router</p>
-            </div>
-          </div>
-        </div>
-
-        {/* 1-Click Direct Configuration Action Grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
-          gap: '16px',
-          padding: '20px 24px',
-          borderBottom: '1px solid var(--border)'
-        }}>
-          {/* Card 1: OpenAI Codex & ChatGPT Desktop */}
-          <div style={{
-            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(6, 78, 59, 0.05) 100%)',
-            border: clientsStatus?.codex?.isConfigured ? '1.5px solid rgba(16, 185, 129, 0.5)' : '1.5px solid rgba(245, 158, 11, 0.4)',
-            borderRadius: '12px',
-            padding: '18px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            gap: '14px',
-            position: 'relative'
-          }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <OpenAIIcon size={20} color="#10b981" />
-                  <span style={{ fontWeight: '700', fontSize: '15px', color: '#fff' }}>OpenAI Codex &amp; ChatGPT Desktop</span>
-                </div>
-                <span style={{
-                  fontSize: '11px',
-                  fontWeight: '700',
-                  padding: '3px 8px',
-                  borderRadius: '20px',
-                  background: clientsStatus?.codex?.isConfigured ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-                  color: clientsStatus?.codex?.isConfigured ? '#34d399' : '#fbbf24',
-                  border: `1px solid ${clientsStatus?.codex?.isConfigured ? 'rgba(16, 185, 129, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`
-                }}>
-                  {clientsStatus?.codex?.isConfigured ? '● Đã Cấu Hình (Online)' : '○ Cần Cấu Hình'}
-                </span>
-              </div>
-              <p style={{ fontSize: '12.5px', color: 'var(--text-dim)', margin: 0, lineHeight: '1.5' }}>
-                Tự động sửa lỗi 401 Unauthorized, cập nhật <code>config.toml</code> và <code>auth.json</code> để trỏ về Router (cổng {status?.port || 20129}) và tự động xoay tua tài khoản.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleConfigureCodex}
-              disabled={codexLoading}
-              style={{
-                background: 'linear-gradient(135deg, #10b981, #059669)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '10px 16px',
-                fontWeight: '700',
-                fontSize: '13px',
-                cursor: codexLoading ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
-                transition: 'all 0.2s'
-              }}
-            >
-              <Zap size={15} />
-              {codexLoading ? 'Đang cấu hình 1-Click...' : (clientsStatus?.codex?.isConfigured ? '⚡ Cấu Hình Lại Codex 1-Click' : '⚡ Bấm 1-Click Cấu Hình Codex Ngay')}
-            </button>
-          </div>
-
-          {/* Card 2: Google Antigravity IDE */}
-          <div style={{
-            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(30, 58, 138, 0.05) 100%)',
-            border: (clientsStatus?.antigravity?.hostsConfigured && clientsStatus?.antigravity?.isRunning) ? '1.5px solid rgba(59, 130, 246, 0.5)' : '1.5px solid rgba(245, 158, 11, 0.4)',
-            borderRadius: '12px',
-            padding: '18px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            gap: '14px',
-            position: 'relative'
-          }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <GeminiIcon size={20} />
-                  <span style={{ fontWeight: '700', fontSize: '15px', color: '#fff' }}>Google Antigravity IDE</span>
-                </div>
-                <span style={{
-                  fontSize: '11px',
-                  fontWeight: '700',
-                  padding: '3px 8px',
-                  borderRadius: '20px',
-                  background: (clientsStatus?.antigravity?.hostsConfigured && clientsStatus?.antigravity?.isRunning)
-                    ? 'rgba(59, 130, 246, 0.2)'
-                    : clientsStatus?.antigravity?.hostsConfigured
-                    ? 'rgba(16, 185, 129, 0.2)'
-                    : 'rgba(245, 158, 11, 0.2)',
-                  color: (clientsStatus?.antigravity?.hostsConfigured && clientsStatus?.antigravity?.isRunning)
-                    ? '#60a5fa'
-                    : clientsStatus?.antigravity?.hostsConfigured
-                    ? '#34d399'
-                    : '#fbbf24',
-                  border: `1px solid ${(clientsStatus?.antigravity?.hostsConfigured && clientsStatus?.antigravity?.isRunning)
-                    ? 'rgba(59, 130, 246, 0.4)'
-                    : clientsStatus?.antigravity?.hostsConfigured
-                    ? 'rgba(16, 185, 129, 0.4)'
-                    : 'rgba(245, 158, 11, 0.4)'}`
-                }}>
-                  {(clientsStatus?.antigravity?.hostsConfigured && clientsStatus?.antigravity?.isRunning)
-                    ? '● MITM Online (Port 443)'
-                    : clientsStatus?.antigravity?.hostsConfigured
-                    ? '● Hosts Đã Trỏ (Cổng 443 Đang Tắt)'
-                    : '○ Cần Kích Hoạt'}
-                </span>
-              </div>
-              <p style={{ fontSize: '12.5px', color: 'var(--text-dim)', margin: 0, lineHeight: '1.5' }}>
-                Tự động cài đặt chứng chỉ Root CA và định tuyến file hosts để đánh chặn traffic SSL, tráo đổi Bearer token và hoán đổi tài khoản Google khi cạn hạn ngạch.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleConfigureAntigravity}
-              disabled={antigravityLoading}
-              style={{
-                background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '10px 16px',
-                fontWeight: '700',
-                fontSize: '13px',
-                cursor: antigravityLoading ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                boxShadow: '0 4px 14px rgba(59, 130, 246, 0.35)',
-                transition: 'all 0.2s'
-              }}
-            >
-              <Zap size={15} />
-              {antigravityLoading ? 'Đang xử lý...' : (clientsStatus?.antigravity?.hostsConfigured && clientsStatus?.antigravity?.isRunning) ? '⚡ Cấu Hình Lại Antigravity 1-Click' : clientsStatus?.antigravity?.hostsConfigured ? '⚡ Kích Hoạt Port 443' : '⚡ Bấm 1-Click Kích Hoạt Antigravity'}
-            </button>
-          </div>
-        </div>
-
-        <div style={{ padding: '16px 24px 0 24px' }}>
-          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>
-            Hoặc Tùy Chỉnh Thủ Công Cho Các Client Khác:
-          </div>
-
-          <div className="client-tabs-bar">
-            <button
-              type="button"
-              className={`client-tab-btn ${selectedIde === 'cursor' ? 'active' : ''}`}
-              onClick={() => setSelectedIde('cursor')}
-            >
-              <svg className="tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2L2 22h20L12 2z" />
-              </svg>
-              Cursor
-            </button>
-            <button
-              type="button"
-              className={`client-tab-btn ${selectedIde === 'claude' ? 'active' : ''}`}
-              onClick={() => setSelectedIde('claude')}
-            >
-              <svg className="tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="12" cy="12" r="10" />
-              </svg>
-              Claude Code
-            </button>
-            <button
-              type="button"
-              className={`client-tab-btn ${selectedIde === 'cline' ? 'active' : ''}`}
-              onClick={() => setSelectedIde('cline')}
-            >
-              <svg className="tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M8 12h8" />
-              </svg>
-              Cline / Roo
-            </button>
-            <button
-              type="button"
-              className={`client-tab-btn ${selectedIde === 'windsurf' ? 'active' : ''}`}
-              onClick={() => setSelectedIde('windsurf')}
-            >
-              <svg className="tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-              </svg>
-              Windsurf
-            </button>
-            <button
-              type="button"
-              className={`client-tab-btn ${selectedIde === 'curl' ? 'active' : ''}`}
-              onClick={() => setSelectedIde('curl')}
-            >
-              <svg className="tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="4 17 10 11 4 5" />
-                <line x1="12" y1="19" x2="20" y2="19" />
-              </svg>
-              cURL / SDK
-            </button>
-          </div>
-        </div>
-
-        <div className="terminal-console">
-          <div className="terminal-code-row">
-            <span className="terminal-tag">{ideSnippets[selectedIde]?.label}</span>
-            <div className="terminal-code">
-              {ideSnippets[selectedIde]?.display}
-            </div>
-          </div>
-
-          <button
-            type="button"
-            className="btn-copy-code"
-            onClick={handleCopyIdeSnippet}
-          >
-            {copiedIdeCode ? <Check size={13} style={{ color: '#34d399' }} /> : <Copy size={13} />}
-            <span>{copiedIdeCode ? 'Đã Sao Chép!' : 'Sao Chép Config'}</span>
-          </button>
-        </div>
-      </section>
-
-      {/* 4. AI Providers Bento Grid */}
+      {/* AI Providers Bento Grid */}
       <section className="bento-section-header">
         <div>
           <h2>Nhà Cung Cấp AI &amp; Quản Trị Multi-Account</h2>
@@ -755,14 +361,14 @@ export default function GatewayProvidersView({ status, onStatusChange }) {
               className={`provider-bento-box ${themeClass}`}
               onClick={() => {
                 setSelectedProvider(p);
-                window.location.hash = `#gateway/${p.id}`;
+                window.location.hash = `#provider/${p.id}`;
               }}
               tabIndex={0}
               role="button"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   setSelectedProvider(p);
-                  window.location.hash = `#gateway/${p.id}`;
+                  window.location.hash = `#provider/${p.id}`;
                 }
               }}
             >
@@ -856,103 +462,6 @@ export default function GatewayProvidersView({ status, onStatusChange }) {
             </article>
           );
         })}
-      </section>
-
-      {/* 5. Live Architecture Pipeline & Diagnostic Console */}
-      <section className="workbench-split">
-        {/* Left: Routing & Anti-429 Engine Flow */}
-        <div className="workbench-card">
-          <div className="wb-card-head">
-            <h3>
-              <Layers size={16} style={{ color: '#38bdf8' }} />
-              Kiến Trúc Luồng Định Tuyến &amp; Xoay Tua
-            </h3>
-            <span className="wb-pill-badge">Sub-5ms Dispatch</span>
-          </div>
-
-          <div className="pipe-step-container">
-            <div className="pipe-step-card">
-              <span className="pipe-phase-tag">Pha 01 · Inbound</span>
-              <div className="pipe-step-title">Client Proxy</div>
-              <div className="pipe-step-text">Cursor / Claude Code gửi prompt về <code>:{status?.port || 20129}/v1</code></div>
-            </div>
-            <div className="pipe-step-card">
-              <span className="pipe-phase-tag">Pha 02 · Resolve</span>
-              <div className="pipe-step-title">Virtual Resolver</div>
-              <div className="pipe-step-text">Map combo/model ảo sang model thực tế tối ưu</div>
-            </div>
-            <div className="pipe-step-card">
-              <span className="pipe-phase-tag">Pha 03 · Shield</span>
-              <div className="pipe-step-title">Anti-429 Fallback</div>
-              <div className="pipe-step-text">Trượt tự động sang account kế tiếp khi chạm quota</div>
-            </div>
-          </div>
-
-          <div className="pipe-guarantees">
-            <div>
-              <span className="check-icon">&#10003;</span> <b>Zero Rate-Limit Interruption:</b> Giữ luồng stream liên tục, không bị đứt gãy.
-            </div>
-            <div>
-              <span className="check-icon">&#10003;</span> <b>Bi-directional Converter:</b> Chuẩn hóa tự động OpenAI &harr; Gemini &harr; Claude.
-            </div>
-            <div>
-              <span className="check-icon">&#10003;</span> <b>100% On-Device Privacy:</b> Toàn bộ lưu lượng xử lý cục bộ, không gửi về cloud ngoài.
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Interactive Console Test */}
-        <div className="workbench-card">
-          <div className="wb-card-head">
-            <h3>
-              <Activity size={16} style={{ color: '#10b981' }} />
-              Kiểm Tra Kết Nối Trực Tiếp (Live Ping Test)
-            </h3>
-            <span className="wb-pill-badge" style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', borderColor: 'rgba(16,185,129,0.3)' }}>
-              Endpoint Ready
-            </span>
-          </div>
-
-          <div className="playground-box">
-            <pre><code style={{ fontFamily: 'inherit' }}>{`curl -X POST ${endpointUrl}/chat/completions \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "model": "gemini-3.8-flash-high",
-    "messages": [{"role": "user", "content": "Ping gateway healthcheck"}]
-  }'`}</code></pre>
-
-            <div className="playground-footer">
-              <div>
-                {pingLoading && (
-                  <span style={{ color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <RefreshCw size={13} className="spin" /> Đang đo độ trễ Gateway...
-                  </span>
-                )}
-                {!pingLoading && pingResult && (
-                  <span style={{ color: pingResult.ok ? '#34d399' : '#f87171', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span className={`status-dot ${pingResult.ok ? 'green' : 'red'}`}></span>
-                    <b>{pingResult.ok ? '200 OK' : 'Thất bại'}</b>
-                    <span className="mono-text">· {pingResult.latency}ms</span>
-                    <span style={{ color: 'var(--text-dim)' }}>({pingResult.count} models - {pingResult.timestamp})</span>
-                  </span>
-                )}
-                {!pingLoading && !pingResult && (
-                  <span style={{ color: 'var(--text-dim)' }}>Phản hồi kiểm tra gần nhất: <b style={{ color: '#34d399' }}>200 OK (Latency: 1.2ms)</b></span>
-                )}
-              </div>
-
-              <button
-                type="button"
-                className="btn-ping-live"
-                onClick={handleRunPingTest}
-                disabled={pingLoading}
-              >
-                <Activity size={13} />
-                <span>{pingLoading ? 'Đang Test...' : 'Ping Gateway Test'}</span>
-              </button>
-            </div>
-          </div>
-        </div>
       </section>
     </div>
   );
