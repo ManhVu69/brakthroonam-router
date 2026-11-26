@@ -110,7 +110,7 @@ export default function GatewayProvidersView({ status, onStatusChange }) {
   useEffect(() => {
     const checkHash = () => {
       const hash = window.location.hash;
-      const m = hash.match(/^#(?:gateway|provider)\/([a-zA-Z0-9_-]+)/);
+      const m = hash.match(/^#\/?(?:gateway|provider)\/([a-zA-Z0-9_-]+)/);
       if (m && providers.length > 0) {
         const found = providers.find(p => p.id === m[1]);
         if (found) {
