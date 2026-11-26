@@ -59,16 +59,16 @@ function ClaudeIcon({ size = 20, color = '#D97757' }) {
 // Format email cleanly for mono typography
 function formatEmail(email) {
   if (!email) return 'Active session';
-  if (email.length <= 22) return email;
+  if (email.length <= 24) return email;
   const parts = email.split('@');
   if (parts.length === 2) {
     const user = parts[0];
     const domain = parts[1];
-    if (user.length > 7) {
-      return `${user.slice(0, 7)}…@${domain}`;
+    if (user.length > 8) {
+      return `${user.slice(0, 8)}…@${domain}`;
     }
   }
-  return email.slice(0, 18) + '…';
+  return email.slice(0, 20) + '…';
 }
 
 // Curate real flagship models per provider
@@ -407,7 +407,7 @@ export default function GatewayProvidersView({ status, onStatusChange }) {
                     );
                   })
                 ) : (
-                  <div className="acc-row-v2" style={{ color: 'var(--text-dim)', fontSize: '11px' }}>
+                  <div className="acc-row-v2" style={{ color: 'var(--text-dim)', fontSize: '13px' }}>
                     <span>Chưa liên kết tài khoản nào</span>
                     <span style={{ color: '#38bdf8', fontWeight: 500 }}>+ Thêm ngay</span>
                   </div>

@@ -1113,11 +1113,11 @@ input:checked + .slider:before {
 }
 
 .metric-label {
-  font-size: 11.5px;
+  font-size: 12.5px;
   font-family: var(--font-text);
   font-weight: 500;
   letter-spacing: -0.01em;
-  color: var(--text-dim);
+  color: var(--text-muted);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1127,23 +1127,23 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 .metric-value {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 500;
   color: #f8fafc;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 
 .metric-tag-mini {
-  font-size: 10px;
+  font-size: 11px;
   font-family: var(--font-mono);
   font-weight: 500;
-  padding: 1px 6px;
+  padding: 2px 7px;
   border-radius: 4px;
   background: rgba(16, 185, 129, 0.12);
   border: 1px solid rgba(16, 185, 129, 0.25);
@@ -1165,11 +1165,12 @@ input:checked + .slider:before {
 }
 
 .metric-sub {
-  font-size: 11px;
-  color: var(--text-muted);
+  font-size: 12px;
+  color: var(--text-dim);
   font-family: var(--font-text);
   letter-spacing: -0.01em;
   font-weight: 400;
+  margin-top: 2px;
 }
 
 /* 2. Dynamic HUD Stats Bar (4 Tiles with Vibrant LED Hairlines) */
@@ -1545,7 +1546,7 @@ input:checked + .slider:before {
 }
 
 .card-titles h3 {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 500;
   color: #f8fafc;
   margin: 0;
@@ -1554,20 +1555,20 @@ input:checked + .slider:before {
 }
 
 .card-titles span {
-  font-size: 11px;
-  color: var(--text-dim);
-  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--text-muted);
+  font-family: var(--font-text);
   display: block;
-  margin-top: 1px;
+  margin-top: 2px;
 }
 
 .card-status-pill {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 8px;
+  padding: 3px 9px;
   border-radius: 5px;
-  font-size: 11px;
+  font-size: 12px;
   font-family: var(--font-mono);
   font-weight: 500;
   white-space: nowrap;
@@ -1588,49 +1589,49 @@ input:checked + .slider:before {
 .card-accounts-block {
   background: rgba(9, 10, 15, 0.75);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 9px;
-  padding: 10px 12px;
+  border-radius: 10px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 8px;
 }
 
 .block-header-label {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11.5px;
+  font-size: 13px;
   font-weight: 500;
   font-family: var(--font-text);
   letter-spacing: -0.01em;
-  color: var(--text-dim);
+  color: var(--text-muted);
 }
 
 .acc-row-v2 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11.5px;
-  padding: 1px 0;
+  font-size: 13px;
+  padding: 2px 0;
 }
 
 .acc-user-info {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   min-width: 0;
 }
 
 .acc-avatar-v2 {
-  width: 17px;
-  height: 17px;
-  border-radius: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 500;
   color: #cbd5e1;
   font-family: var(--font-mono);
@@ -1639,10 +1640,10 @@ input:checked + .slider:before {
 
 .acc-email-text {
   font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: 13px;
   font-weight: 400;
   letter-spacing: -0.015em;
-  color: #cbd5e1;
+  color: #e2e8f0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1651,18 +1652,18 @@ input:checked + .slider:before {
 .acc-quota-v2 {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
   color: #10b981;
   flex-shrink: 0;
 }
 
 .acc-quota-track {
-  width: 26px;
-  height: 3px;
+  width: 32px;
+  height: 4px;
   background: rgba(255, 255, 255, 0.08);
   border-radius: 2px;
   overflow: hidden;
@@ -1677,25 +1678,25 @@ input:checked + .slider:before {
 .card-models-block {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .model-chip-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 6px;
 }
 
 .model-pill-v2 {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 7px;
-  border-radius: 5px;
-  font-size: 11px;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12.5px;
   font-weight: 400;
   font-family: var(--font-mono);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.07);
   color: #cbd5e1;
@@ -1709,12 +1710,12 @@ input:checked + .slider:before {
 }
 
 .model-pill-v2 .ctx-badge {
-  font-size: 9.5px;
+  font-size: 11px;
   font-family: var(--font-mono);
   color: var(--text-dim);
-  padding: 0 3px;
+  padding: 1px 5px;
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 .model-pill-v2.more-count {
@@ -1722,6 +1723,7 @@ input:checked + .slider:before {
   border-color: rgba(59, 130, 246, 0.22);
   color: #60a5fa;
   font-weight: 500;
+  font-size: 12px;
 }
 
 .card-footer-v2 {
@@ -1729,22 +1731,22 @@ input:checked + .slider:before {
   align-items: center;
   justify-content: space-between;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
-  padding-top: 11px;
+  padding-top: 13px;
   margin-top: auto;
 }
 
 .card-spec-text {
-  font-size: 10.5px;
+  font-size: 12px;
   color: var(--text-dim);
   font-family: var(--font-mono);
   letter-spacing: -0.01em;
 }
 
 .card-action-btn {
-  font-size: 11.5px;
+  font-size: 13px;
   font-weight: 500;
   font-family: var(--font-text);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
   color: #60a5fa;
   display: inline-flex;
   align-items: center;
