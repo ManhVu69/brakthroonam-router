@@ -122,7 +122,7 @@ async function handleChatOrResponse(req, res, isResponses = false) {
     const candidate = candidateChain[cIdx];
     const currentModel = candidate.model;
     const providerId = candidate.providerId;
-    const activeAccounts = getActiveAccountsForProvider(providerId);
+    const activeAccounts = getActiveAccountsForProvider(providerId, currentModel);
 
     if (!activeAccounts || activeAccounts.length === 0) {
       lastError = new Error(`No active accounts configured for provider '${providerId}' (model: ${currentModel})`);

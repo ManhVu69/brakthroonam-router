@@ -126,19 +126,45 @@ function deleteAccount(id) {
 }
 
 /**
- * Get all active accounts for a given provider, ordered by priority
+ * Get all active accounts for a given provider, ordered by priority and model support
  */
-function getActiveAccountsForProvider(provider) {
+function getActiveAccountsForProvider(provider, model = null) {
   const db = getDb();
   const providerFilter = (provider === 'gemini' || provider === 'antigravity') 
     ? "('gemini', 'antigravity')" 
     : `('${provider}')`;
 
-  return db.prepare(`
+  const accounts = db.prepare(`
     SELECT * FROM provider_accounts 
     WHERE provider IN ${providerFilter} AND is_active = 1
     ORDER BY priority ASC, last_used_at ASC
   `).all();
+
+  if (!model) return accounts;
+
+  const cleanModel = model.replace(/^(cx|oc|gm|antigravity)\//, '').toLowerCase();
+
+  // Model-aware priority: Accounts that probed and verified support for this model come first!
+  return accounts.sort((a, b) => {
+    let aHas = false;
+    let bHas = false;
+    try {
+      if (a.probed_models) {
+        const probed = JSON.parse(a.probed_models);
+        aHas = probed.some(m => m.modelId && (m.modelId.toLowerCase() === cleanModel || m.modelId.toLowerCase().includes(cleanModel)));
+      }
+    } catch (_) {}
+    try {
+      if (b.probed_models) {
+        const probed = JSON.parse(b.probed_models);
+        bHas = probed.some(m => m.modelId && (m.modelId.toLowerCase() === cleanModel || m.modelId.toLowerCase().includes(cleanModel)));
+      }
+    } catch (_) {}
+
+    if (aHas && !bHas) return -1;
+    if (!aHas && bHas) return 1;
+    return (a.priority || 1) - (b.priority || 1);
+  });
 }
 
 /**
