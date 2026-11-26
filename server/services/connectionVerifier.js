@@ -249,7 +249,73 @@ async function probeAccountModels(accountId) {
 
   const { PROVIDERS } = require('./providerService');
   const providerDef = PROVIDERS[account.provider] || PROVIDERS.gemini;
-  const modelsToProbe = (providerDef.models || []).map(m => m.id);
+
+  // 1. Dedicated live probe flow for Anthropic Claude accounts
+  if (account.provider === 'claude') {
+    const claudeModels = (providerDef.models || []).map(m => m.id);
+    const probeResults = await Promise.all(claudeModels.map(m => pingSingleClaudeModel(m, keyToUse, accessTokenToUse)));
+    const readyCount = probeResults.filter(r => r.statusCode === 200).length;
+    const cappedCount = probeResults.filter(r => r.statusCode === 429).length;
+    const unsupportedCount = probeResults.filter(r => r.statusCode === 404).length;
+    const statusMsg = `${readyCount} models sẵn sàng • ${cappedCount} hết quota (429) • ${unsupportedCount} chưa hỗ trợ`;
+
+    db.prepare(`
+      UPDATE provider_accounts
+      SET test_status = ?,
+          test_message = ?,
+          models_count = ?,
+          probed_models = ?,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(
+      readyCount > 0 ? 'verified' : (cappedCount > 0 ? 'warning' : 'failed'),
+      statusMsg,
+      readyCount,
+      JSON.stringify(probeResults),
+      account.id
+    );
+
+    return {
+      accountId: account.id,
+      email: account.email || account.name,
+      readyCount,
+      cappedCount,
+      unsupportedCount,
+      totalCatalogFromGoogle: probeResults.length,
+      catalogSource: 'Anthropic Claude',
+      googleCatalogSample: probeResults.map(p => p.modelId),
+      probeResults,
+      probedAt: new Date().toISOString()
+    };
+  }
+
+  // 2. Dedicated dynamic scan for Google Gemini accounts (Scan ALL available models)
+  let dynamicModels = [];
+  if (account.provider === 'gemini') {
+    try {
+      if (accessTokenToUse) {
+        let credsObj = {};
+        try { credsObj = JSON.parse(account.credentials || '{}'); } catch(e){}
+        const liveList = await googleAuthService.fetchAvailableModels(accessTokenToUse, credsObj.projectId);
+        if (Array.isArray(liveList) && liveList.length > 0) {
+          dynamicModels = liveList.map(m => m.id);
+        }
+      } else if (keyToUse) {
+        const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${keyToUse}`;
+        const listRes = await makeGet(listUrl);
+        if (listRes.status === 200 && Array.isArray(listRes.data?.models)) {
+          dynamicModels = listRes.data.models.map(x => x.name.replace('models/', ''));
+        }
+      }
+    } catch (err) {
+      console.warn('[Probe] Gemini dynamic model fetch warning:', err.message);
+    }
+  }
+
+  // Merge predefined catalog with all dynamically discovered models
+  const baseCatalogModels = (providerDef.models || []).map(m => m.id);
+  const combinedSet = new Set([...baseCatalogModels, ...dynamicModels]);
+  const modelsToProbe = Array.from(combinedSet);
 
   // Parallel probe with timeout safety
   const probeResults = await Promise.all(modelsToProbe.map(m => pingSingleModel(m, keyToUse, accessTokenToUse)));

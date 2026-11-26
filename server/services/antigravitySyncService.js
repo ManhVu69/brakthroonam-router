@@ -46,8 +46,8 @@ function syncAntigravityActiveAccount() {
 
   if (existingAcc) {
     const { isAccountExhausted } = require('./antigravityMitmService');
-    // If account is marked as quota exhausted, DO NOT promote it to Priority 1!
-    if (isAccountExhausted(currentEmail)) {
+    // If account is disabled by user, marked as quota exhausted, or on cooldown (priority >= 90), DO NOT promote it!
+    if (existingAcc.is_active === 0 || isAccountExhausted(currentEmail) || existingAcc.priority >= 90) {
       return { changed: false, email: currentEmail };
     }
 

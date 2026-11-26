@@ -108,6 +108,9 @@ function initTables(db) {
   if (!cols.includes('probed_models')) {
     try { db.exec("ALTER TABLE provider_accounts ADD COLUMN probed_models TEXT"); } catch {}
   }
+  if (!cols.includes('role')) {
+    try { db.exec("ALTER TABLE provider_accounts ADD COLUMN role TEXT DEFAULT 'all'"); } catch {}
+  }
 
   const usageCols = db.prepare("PRAGMA table_info(usage_logs)").all().map(c => c.name);
   if (!usageCols.includes('requested_model')) {

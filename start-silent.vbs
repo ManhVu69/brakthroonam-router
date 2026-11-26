@@ -1,8 +1,10 @@
-' AI Router PRO - Silent Background Launcher
+' Brakthroonam Router PRO - Silent Background Launcher
 ' Starts AI Router silently without any console window or popup browser
 
 Set WshShell = CreateObject("WScript.Shell")
-WshShell.CurrentDirectory = "D:\startup\ai-router"
+Set fso = CreateObject("Scripting.FileSystemObject")
+scriptDir = fso.GetParentFolderName(WScript.ScriptFullName)
+WshShell.CurrentDirectory = scriptDir
 
 ' Verify if AI Router is already running on port 20129
 Dim oExec, sOutput
@@ -15,4 +17,5 @@ If InStr(sOutput, "LISTENING") = 0 Then
 End If
 
 Set oExec = Nothing
+Set fso = Nothing
 Set WshShell = Nothing

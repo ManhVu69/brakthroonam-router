@@ -350,7 +350,7 @@ router.get('/providers/:provider/accounts', (req, res) => {
 });
 
 router.post('/providers/:provider/accounts', async (req, res) => {
-  const { name, email, api_key, auth_type = 'api_key', credentials, base_url, priority } = req.body;
+  const { name, email, api_key, auth_type = 'api_key', credentials, base_url, priority, role = 'all' } = req.body;
   if (!name && !email) {
     return res.status(400).json({ error: 'Email hoặc tên tài khoản là bắt buộc (ví dụ user@gmail.com)' });
   }
@@ -363,7 +363,8 @@ router.post('/providers/:provider/accounts', async (req, res) => {
     auth_type,
     credentials,
     base_url,
-    priority: priority || 1
+    priority: priority || 1,
+    role
   });
 
   res.json(account);

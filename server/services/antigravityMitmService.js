@@ -463,11 +463,20 @@ async function handleUpstreamProxy(clientReq, clientRes, hostHeader, bodyBuffer,
 
   let effectiveBodyBuffer = bodyBuffer;
 
-  // 1. PROACTIVE AUTO-SWAP: Only for inference streams if current account is known to be on cooldown
-  if (isAntigravityStream && retryCount === 0 && currentReqEmail && isAccountExhausted(currentReqEmail)) {
+  // 1. PROACTIVE AUTO-SWAP: Only for inference streams if current account is known to be on cooldown or inactive
+  const db = getDb();
+  let isCurrentExhausted = currentReqEmail ? isAccountExhausted(currentReqEmail) : false;
+  if (!isCurrentExhausted && currentReqEmail) {
+    const accRow = db.prepare("SELECT * FROM provider_accounts WHERE lower(email) = lower(?) AND provider = 'gemini'").get(currentReqEmail);
+    if (accRow && (accRow.is_active === 0 || accRow.priority >= 90)) {
+      isCurrentExhausted = true;
+    }
+  }
+
+  if (isAntigravityStream && retryCount === 0 && currentReqEmail && isCurrentExhausted) {
     const standby = await getActiveStandbyAccount([currentReqEmail]);
     if (standby && standby.accessToken) {
-      console.log(`[Brakthroonam MITM] ⚡ Proactive Auto-Swap: ${currentReqEmail} is on cooldown -> routing via standby ${standby.account.email}`);
+      console.log(`[Brakthroonam MITM] ⚡ Proactive Auto-Swap: ${currentReqEmail} is on cooldown/inactive -> routing via standby ${standby.account.email}`);
       upstreamHeaders['authorization'] = `Bearer ${standby.accessToken}`;
 
       if (effectiveBodyBuffer && effectiveBodyBuffer.length > 0) {
@@ -498,28 +507,43 @@ async function handleUpstreamProxy(clientReq, clientRes, hostHeader, bodyBuffer,
 
   const upstreamReq = https.request(reqOptions, (upstreamRes) => {
     const statusCode = upstreamRes.statusCode;
+    const isServerError = statusCode === 503 || statusCode === 500 || statusCode === 502 || statusCode === 504;
+    const isRateOrAuth = statusCode === 429 || statusCode === 403 || statusCode === 401;
 
-    // Check if Google returned 429 (Quota), 403 (Subscription), or 401 (Token Expired)
+    // Check if Google returned 429 (Quota), 503 (High Traffic / Capacity), 403 (Subscription), 401 (Token Expired) or 500/502/504
     // ONLY attempt auto-swap for INFERENCE streams (:streamGenerateContent, :generateContent)
-    if (isAntigravityStream && (statusCode === 429 || statusCode === 403 || statusCode === 401)) {
+    if (isAntigravityStream && (isRateOrAuth || isServerError)) {
       const errChunks = [];
       upstreamRes.on('data', c => errChunks.push(c));
       upstreamRes.on('end', async () => {
         const errBody = Buffer.concat(errChunks).toString('utf8');
-        const isQuotaOrAuth = errBody.includes('RESOURCE_EXHAUSTED') ||
-                              errBody.includes('quota') ||
-                              errBody.includes('Individual quota') ||
-                              errBody.includes('UNAUTHENTICATED') ||
-                              statusCode === 429 ||
-                              statusCode === 401;
+        const isQuotaOrAuthOrOverloaded =
+          errBody.includes('RESOURCE_EXHAUSTED') ||
+          errBody.includes('quota') ||
+          errBody.includes('Individual quota') ||
+          errBody.includes('UNAUTHENTICATED') ||
+          errBody.includes('high traffic') ||
+          errBody.includes('UNAVAILABLE') ||
+          errBody.includes('overloaded') ||
+          isRateOrAuth ||
+          isServerError;
 
-        if (isQuotaOrAuth && retryCount < 3) {
-          console.warn(`[Brakthroonam MITM] ⚠️ Upstream hit Quota/Auth issue (${statusCode}). Initiating Instant Account Auto-Swap...`);
+        if (isQuotaOrAuthOrOverloaded && retryCount < 3) {
+          console.warn(`[Brakthroonam MITM] ⚠️ Upstream hit Quota/Capacity issue (${statusCode}). Initiating Instant Account Auto-Swap...`);
           
-          const isBurst = statusCode === 429 && !errBody.includes('Individual quota');
+          const isBurst = statusCode === 429 && !errBody.includes('Individual quota') && !errBody.includes('RESOURCE_EXHAUSTED');
           if (statusCode !== 401) {
             markAccountExhausted(currentReqEmail, isBurst);
           }
+
+          // Also demote in DB so watcher does not immediately promote it
+          try {
+            const accToDemote = db.prepare("SELECT id FROM provider_accounts WHERE lower(email) = lower(?) AND provider = 'gemini'").get(currentReqEmail);
+            if (accToDemote) {
+              const { handleQuotaExhausted } = require('./antigravitySyncService');
+              handleQuotaExhausted(accToDemote.id, 'gemini-stream');
+            }
+          } catch (_) {}
 
           const standby = await getActiveStandbyAccount([currentReqEmail]);
 
@@ -527,11 +551,10 @@ async function handleUpstreamProxy(clientReq, clientRes, hostHeader, bodyBuffer,
             console.log(`[Brakthroonam MITM] 🔄 Swapping token to Standby Account: ${standby.account.email}`);
             
             // Promote standby account as Priority 1
-            const db = getDb();
             try {
               db.transaction(() => {
                 db.prepare("UPDATE provider_accounts SET priority = priority + 1 WHERE id != ? AND provider = 'gemini'").run(standby.account.id);
-                db.prepare("UPDATE provider_accounts SET priority = 1 WHERE id = ?").run(standby.account.id);
+                db.prepare("UPDATE provider_accounts SET priority = 1, is_active = 1 WHERE id = ?").run(standby.account.id);
               })();
             } catch (_) {}
 
@@ -696,5 +719,6 @@ module.exports = {
   generateCertificates,
   isAccountExhausted,
   markAccountExhausted,
-  clearAccountExhausted
+  clearAccountExhausted,
+  getActiveStandbyAccount
 };

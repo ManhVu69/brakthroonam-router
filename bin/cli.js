@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const { exec } = require('child_process');
+const { exec, execSync } = require('child_process');
 const { startServer } = require('../server');
 
 const args = process.argv.slice(2);
@@ -42,10 +42,22 @@ function openBrowser(url) {
   } else {
     cmd = `xdg-open "${url}"`;
   }
-  exec(cmd, { windowsHide: true }, (err) => {
-    if (err) {
-      console.log(`Open browser manually: ${url}`);
+
+  // Trên Windows, thử thực thi đồng bộ với Windows Shell để tránh Node process thoát trước khi lệnh mở URL kịp chạy
+  try {
+    if (platform === 'win32') {
+      execSync(cmd, { windowsHide: true, stdio: 'ignore', timeout: 3000 });
+      return Promise.resolve();
     }
+  } catch (_) {}
+
+  return new Promise((resolve) => {
+    exec(cmd, { windowsHide: true }, (err) => {
+      if (err) {
+        console.log(`Vui lòng mở trình duyệt thủ công: ${url}`);
+      }
+      resolve();
+    });
   });
 }
 
@@ -55,16 +67,16 @@ async function main() {
     const dashboardUrl = `http://localhost:${port}`;
 
     if (!noBrowser) {
-      // Open browser after 400ms to allow TCP listener ready
+      // Đợi 500ms để TCP listener hoàn tất rồi mở trình duyệt
       setTimeout(() => {
         openBrowser(dashboardUrl);
-      }, 400);
+      }, 500);
     }
 
     const shutdown = () => {
-      console.log('\nShutting down Brakthroonam Router...');
+      console.log('\n🛑 Đang tắt Brakthroonam Router...');
       server.close(() => {
-        console.log('Brakthroonam Router stopped.');
+        console.log('✅ Brakthroonam Router đã dừng.');
         process.exit(0);
       });
     };
@@ -80,11 +92,19 @@ async function main() {
     });
   } catch (err) {
     if (err.code === 'EADDRINUSE') {
-      console.log(`\nℹ️ Brakthroonam Router is already running on port ${port}. Opening dashboard...`);
-      openBrowser(`http://localhost:${port}`);
-      process.exit(0);
+      console.log(`\n=======================================================================`);
+      console.log(`ℹ️  Brakthroonam Router đang chạy trên cổng ${port}.`);
+      console.log(`🌐 Đang mở Dashboard: http://localhost:${port}`);
+      console.log(`=======================================================================\n`);
+      if (!noBrowser) {
+        await openBrowser(`http://localhost:${port}`);
+      }
+      // Cho một khoảng đệm 400ms để đảm bảo Windows shell đã nhận lệnh mở trình duyệt
+      setTimeout(() => {
+        process.exit(0);
+      }, 400);
     } else {
-      console.error('Failed to start Brakthroonam Router:', err.message);
+      console.error('\n❌ Không thể khởi động Brakthroonam Router:', err.message);
       process.exit(1);
     }
   }

@@ -10,7 +10,7 @@ function listAccountsByProvider(provider) {
     : `('${provider}')`;
 
   return db.prepare(`
-    SELECT id, provider, name, email, auth_type, priority, is_active, 
+    SELECT id, provider, name, email, auth_type, priority, is_active, role,
            consecutive_uses, test_status, test_message, models_count, quotas, probed_models,
            last_used_at, last_error, last_error_at, created_at, updated_at,
            CASE WHEN api_key IS NOT NULL AND length(api_key) > 8 
@@ -26,7 +26,7 @@ function listAccountsByProvider(provider) {
 function getAllActiveAccounts() {
   const db = getDb();
   return db.prepare(`
-    SELECT id, provider, name, email, auth_type, priority, is_active, 
+    SELECT id, provider, name, email, auth_type, priority, is_active, role,
            consecutive_uses, test_status, test_message, models_count, quotas, probed_models,
            last_used_at, last_error, last_error_at, created_at, updated_at
     FROM provider_accounts
@@ -38,7 +38,7 @@ function getAllActiveAccounts() {
 function getAccountById(id) {
   const db = getDb();
   return db.prepare(`
-    SELECT id, provider, name, email, auth_type, priority, is_active, 
+    SELECT id, provider, name, email, auth_type, priority, is_active, role,
            consecutive_uses, test_status, test_message, models_count, quotas, probed_models,
            last_used_at, last_error, last_error_at, created_at, updated_at,
            CASE WHEN api_key IS NOT NULL AND length(api_key) > 8 
@@ -51,14 +51,14 @@ function getAccountById(id) {
   `).get(id);
 }
 
-async function createAccount({ id, provider, name, email = null, auth_type = 'api_key', api_key = null, credentials = null, base_url = null, priority = 1, quotas = null }) {
+async function createAccount({ id, provider, name, email = null, auth_type = 'api_key', api_key = null, credentials = null, base_url = null, priority = 1, quotas = null, role = 'all' }) {
   const db = getDb();
   const accountId = id || ('acc_' + Math.random().toString(36).substring(2, 10));
 
   db.prepare(`
-    INSERT INTO provider_accounts (id, provider, name, email, auth_type, api_key, credentials, base_url, priority, is_active, test_status, quotas)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'untested', ?)
-  `).run(accountId, provider, name, email, auth_type, api_key, credentials, base_url, priority, quotas);
+    INSERT INTO provider_accounts (id, provider, name, email, auth_type, api_key, credentials, base_url, priority, is_active, test_status, quotas, role)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'untested', ?, ?)
+  `).run(accountId, provider, name, email, auth_type, api_key, credentials, base_url, priority, quotas, role);
 
   // Automatically test connection upon creation
   if (api_key || auth_type === 'oauth') {
@@ -68,7 +68,7 @@ async function createAccount({ id, provider, name, email = null, auth_type = 'ap
   return getAccountById(accountId);
 }
 
-function updateAccount(id, { name, email, api_key, priority, is_active, base_url, credentials, quotas }) {
+function updateAccount(id, { name, email, api_key, priority, is_active, base_url, credentials, quotas, role }) {
   const db = getDb();
   const fields = [];
   const params = [];
@@ -81,6 +81,7 @@ function updateAccount(id, { name, email, api_key, priority, is_active, base_url
   if (priority !== undefined) { fields.push("priority = ?"); params.push(priority); }
   if (is_active !== undefined) { fields.push("is_active = ?"); params.push(is_active ? 1 : 0); }
   if (quotas !== undefined) { fields.push("quotas = ?"); params.push(quotas); }
+  if (role !== undefined) { fields.push("role = ?"); params.push(role); }
 
   fields.push("updated_at = CURRENT_TIMESTAMP");
   params.push(id);
