@@ -2668,24 +2668,19 @@ input:checked + .slider:before {
   line-height: 1.35;
 }
 
-/* 2-Column Console Layout */
+/* Console Workspace Layout */
 .console-main-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.28fr) minmax(0, 0.92fr);
+  display: flex;
+  flex-direction: column;
   gap: 20px;
-  align-items: start;
-}
-
-@media (max-width: 1100px) {
-  .console-main-grid {
-    grid-template-columns: 1fr;
-  }
+  width: 100%;
 }
 
 .console-left-col {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: 100%;
 }
 
 /* OAuth Card */

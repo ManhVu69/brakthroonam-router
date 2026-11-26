@@ -95,7 +95,6 @@ export default function ProviderDrawer({ provider, onClose, onUpdated }) {
   const [copiedEmailId, setCopiedEmailId] = useState(null);
   const [isLoggingInGoogle, setIsLoggingInGoogle] = useState(false);
   const [expandedModelsMap, setExpandedModelsMap] = useState({});
-  const [selectedTierFilter, setSelectedTierFilter] = useState('all');
 
   // Edit Key Modal
   const [editingAccount, setEditingAccount] = useState(null);
@@ -322,20 +321,7 @@ export default function ProviderDrawer({ provider, onClose, onUpdated }) {
   const isGemini = provider.id === 'gemini';
   const isCodex = provider.id === 'codex';
   const isClaude = provider.id === 'claude';
-  const models = provider.models || [];
   const activeAccountsCount = accounts.filter(a => a.is_active).length;
-
-  const tier1Models = models.filter(m => m.tier === 1);
-  const tier2Models = models.filter(m => m.tier === 2);
-  const tier3Models = models.filter(m => m.tier === 3);
-
-  const displayedModels = selectedTierFilter === 'tier1'
-    ? tier1Models
-    : selectedTierFilter === 'tier2'
-    ? tier2Models
-    : selectedTierFilter === 'tier3'
-    ? tier3Models
-    : models;
 
   return (
     <div className="provider-console-shell">
@@ -348,7 +334,7 @@ export default function ProviderDrawer({ provider, onClose, onUpdated }) {
             onClick={onClose}
           >
             <ArrowLeft size={14} />
-            <span>Gateway & Providers</span>
+            <span>Provider</span>
           </button>
           <span className="nav-divider">/</span>
           <div className="nav-current-provider">
@@ -400,7 +386,6 @@ export default function ProviderDrawer({ provider, onClose, onUpdated }) {
                 <span>{activeAccountsCount > 0 ? `${activeAccountsCount} Active` : 'Chưa kích hoạt'}</span>
               </span>
             </div>
-            <p className="hero-desc">{provider.description}</p>
           </div>
         </div>
 
@@ -414,69 +399,7 @@ export default function ProviderDrawer({ provider, onClose, onUpdated }) {
         </button>
       </header>
 
-      {/* 3. METRIC TELEMETRY STRIP (4 POLISHED KPI CARDS) */}
-      <section className="telemetry-bar" aria-label="Provider Key Metrics">
-        <div className="telemetry-item">
-          <div className="telemetry-head">
-            <span className="telemetry-label">Tài khoản kết nối</span>
-            <div className="telemetry-icon-wrap" style={{ background: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8' }}>
-              <Server size={14} />
-            </div>
-          </div>
-          <div className="telemetry-value">
-            <span className="telemetry-number">{accounts.length}</span>
-            <span className="telemetry-sub">
-              {accounts.filter(a => a.auth_type === 'oauth').length} OAuth • {accounts.filter(a => a.auth_type !== 'oauth').length} API Key
-            </span>
-          </div>
-        </div>
-
-        <div className="telemetry-item">
-          <div className="telemetry-head">
-            <span className="telemetry-label">Models sẵn sàng</span>
-            <div className="telemetry-icon-wrap" style={{ background: 'rgba(168, 85, 247, 0.12)', color: '#c084fc' }}>
-              <Cpu size={14} />
-            </div>
-          </div>
-          <div className="telemetry-value">
-            <span className="telemetry-number">{models.length}</span>
-            <span className="telemetry-sub">
-              Tier 1: {tier1Models.length} • Tier 2: {tier2Models.length} • Tier 3: {tier3Models.length}
-            </span>
-          </div>
-        </div>
-
-        <div className="telemetry-item">
-          <div className="telemetry-head">
-            <span className="telemetry-label">Điều phối Fallback</span>
-            <div className="telemetry-icon-wrap" style={{ background: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b' }}>
-              <Zap size={14} />
-            </div>
-          </div>
-          <div className="telemetry-value">
-            <span className="telemetry-highlight" style={{ color: '#fbbf24' }}>2-Tier Fallback</span>
-            <span className="telemetry-sub">Round-Robin xoay tua tự động</span>
-          </div>
-        </div>
-
-        <div className="telemetry-item">
-          <div className="telemetry-head">
-            <span className="telemetry-label">Tình trạng Quota</span>
-            <div className="telemetry-icon-wrap" style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#10b981' }}>
-              <Gauge size={14} />
-            </div>
-          </div>
-          <div className="telemetry-value">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span className="status-dot green"></span>
-              <span className="telemetry-highlight" style={{ color: '#10b981' }}>100% Sẵn sàng</span>
-            </div>
-            <span className="telemetry-sub">Chu kỳ reset 5h & weekly</span>
-          </div>
-        </div>
-      </section>
-
-      {/* 4. BALANCED 2-COLUMN WORKSPACE */}
+      {/* 3. BALANCED ACCOUNTS WORKSPACE */}
       <div className="console-main-grid">
         {/* LEFT COLUMN: ACCOUNTS MANAGEMENT & OAUTH */}
         <section className="console-left-col">
@@ -595,15 +518,6 @@ export default function ProviderDrawer({ provider, onClose, onUpdated }) {
               </div>
             </form>
           )}
-
-          {/* FALLBACK POLICY HINT */}
-          <div className="policy-callout">
-            <ShieldCheck size={16} className="policy-icon" />
-            <div className="policy-text">
-              <strong>Xoay tua tự động (2-Tier Fallback): </strong>
-              Khi tài khoản chạm hạn mức 429, Router chuyển tức thì sang tài khoản kế tiếp trên cùng model. Khi cạn tất cả tài khoản, hệ thống mới hạ tầng xuống tier kế tiếp.
-            </div>
-          </div>
 
           {/* ACCOUNTS LIST HEADER */}
           <div className="accounts-list-head">
@@ -876,115 +790,6 @@ export default function ProviderDrawer({ provider, onClose, onUpdated }) {
                 );
               })
             )}
-          </div>
-        </section>
-
-        {/* RIGHT COLUMN: MODEL CAPABILITY MATRIX & FALLBACK POLICY */}
-        <section className="console-right-col">
-          {/* CARD 1: MODEL MATRIX WITH FILTER TABS */}
-          <div className="console-panel">
-            <div className="panel-header">
-              <div className="panel-title-wrap">
-                <Cpu size={16} className="panel-icon" />
-                <h3 className="panel-title">Ma Trận Models ({models.length})</h3>
-              </div>
-            </div>
-
-            <p className="panel-desc">
-              Phân cấp năng lực models từ Flagship (Deep Think) xuống Standard & Economy để Router tự động xoay tua thông minh.
-            </p>
-
-            {/* Segmented Filter Bar */}
-            <div className="segmented-filter-bar">
-              <button
-                type="button"
-                className={`filter-btn ${selectedTierFilter === 'all' ? 'active' : ''}`}
-                onClick={() => setSelectedTierFilter('all')}
-              >
-                Tất cả ({models.length})
-              </button>
-              <button
-                type="button"
-                className={`filter-btn ${selectedTierFilter === 'tier1' ? 'active' : ''}`}
-                onClick={() => setSelectedTierFilter('tier1')}
-              >
-                Tier 1 ({tier1Models.length})
-              </button>
-              <button
-                type="button"
-                className={`filter-btn ${selectedTierFilter === 'tier2' ? 'active' : ''}`}
-                onClick={() => setSelectedTierFilter('tier2')}
-              >
-                Tier 2 ({tier2Models.length})
-              </button>
-              <button
-                type="button"
-                className={`filter-btn ${selectedTierFilter === 'tier3' ? 'active' : ''}`}
-                onClick={() => setSelectedTierFilter('tier3')}
-              >
-                Tier 3 ({tier3Models.length})
-              </button>
-            </div>
-
-            {/* Model Scannable List */}
-            <div className="models-scannable-list">
-              {displayedModels.map((m) => (
-                <div key={m.id} className="model-row-item">
-                  <div className="model-row-identity">
-                    <span className={`tier-badge-pill tier-${m.tier}`}>
-                      T{m.tier}
-                    </span>
-                    <div>
-                      <div className="model-row-id mono-text">{m.id}</div>
-                      <div className="model-row-name">{m.name}</div>
-                    </div>
-                  </div>
-
-                  <div className="model-row-tags">
-                    <span className="ctx-tag mono-text">{m.ctx}</span>
-                    <span className="model-status-chip">Sẵn sàng</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* CARD 2: 2-TIER FALLBACK MECHANISM */}
-          <div className="console-panel">
-            <div className="panel-header">
-              <div className="panel-title-wrap">
-                <Layers size={16} className="panel-icon" />
-                <h3 className="panel-title">Cơ Chế 2-Tier Fallback</h3>
-              </div>
-              <span className="panel-badge">Anti-429</span>
-            </div>
-
-            <div className="fallback-flow-box">
-              <div className="fallback-flow-row">
-                <span className="flow-step-tag">BƯỚC 1</span>
-                <span>Client gọi Model Tier 1 (vd: <code>gemini-3.8-flash-high</code>) qua <strong>Account #1</strong></span>
-              </div>
-
-              <div className="fallback-flow-sub">
-                <CornerDownRight size={13} className="flow-sub-icon" />
-                <span>Nếu Account #1 chạm hạn mức <strong>HTTP 429</strong>:</span>
-              </div>
-
-              <div className="fallback-flow-branch">
-                <ArrowRight size={13} className="flow-branch-icon" />
-                <span>Tự động xoay tua sang <strong>Account #2</strong> (vẫn giữ nguyên Tier 1)</span>
-              </div>
-
-              <div className="fallback-flow-sub">
-                <CornerDownRight size={13} className="flow-sub-icon red" />
-                <span>Nếu tất cả các tài khoản đều chạm hạn mức 429:</span>
-              </div>
-
-              <div className="fallback-flow-branch">
-                <ArrowRight size={13} className="flow-branch-icon blue" />
-                <span>Tự động hạ tầng sang <strong>Tier 2 Standard</strong> và tiếp tục stream phản hồi</span>
-              </div>
-            </div>
           </div>
         </section>
       </div>
