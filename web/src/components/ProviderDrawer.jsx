@@ -1032,7 +1032,7 @@ export default function ProviderDrawer({ provider, onClose, onUpdated }) {
               <div>
                 <h3 className="modal-title">Kết Quả Quét Thực Tế (Live Model Probe)</h3>
                 <p className="modal-subtitle">
-                  Tài khoản: <strong style={{ color: '#fff' }}>{probeModalData.email}</strong> • Google ListModels xác nhận <strong style={{ color: '#38bdf8' }}>{probeModalData.totalCatalogFromGoogle} models</strong>
+                  Tài khoản: <strong style={{ color: '#fff' }}>{probeModalData.email}</strong> • {probeModalData.catalogSource || 'Provider'} xác nhận <strong style={{ color: '#38bdf8' }}>{probeModalData.totalCatalogFromGoogle} models</strong>
                 </p>
               </div>
               <button type="button" className="btn-icon" onClick={() => setProbeModalData(null)}>

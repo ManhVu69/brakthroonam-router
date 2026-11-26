@@ -39,10 +39,15 @@ const PROVIDERS = {
     id: 'codex',
     name: 'OpenAI Codex',
     badge: 'GPT & Reasoning',
-    description: 'GPT-4o, o1, o3-mini, GPT-4.5 via OpenAI API hoặc Codex Session',
+    description: 'GPT-6.2 Sol, GPT-6.2 Astra, GPT-4o, o1, o3-mini via OpenAI API hoặc Codex Session',
     defaultBaseUrl: 'https://api.openai.com/v1',
     authTypes: ['api_key', 'oauth'],
     models: [
+      { id: 'gpt-6.2-sol-wm', name: 'GPT-6.2 Sol (Deep Thinking & Speed)', tier: 1, ctx: '262K' },
+      { id: 'gpt-6.2-astra-wm', name: 'GPT-6.2 Astra (Heavy Research & Reasoning)', tier: 1, ctx: '262K' },
+      { id: 'gpt-6-2', name: 'GPT-6.2 (Next-Gen Multimodal)', tier: 1, ctx: '262K' },
+      { id: 'gpt-6-sol-wm', name: 'GPT-6 Sol (High-speed Reasoning)', tier: 1, ctx: '262K' },
+      { id: 'gpt-5.6-sol-wm', name: 'GPT-5.6 Sol (Balanced Coding)', tier: 2, ctx: '262K' },
       { id: 'o1', name: 'o1 (Deep STEM & coding reasoning)', tier: 1, ctx: '200K' },
       { id: 'o3-mini', name: 'o3-mini (High-speed reasoning)', tier: 1, ctx: '200K' },
       { id: 'gpt-4o', name: 'GPT-4o (High intelligence multimodal)', tier: 1, ctx: '128K' },
@@ -110,7 +115,7 @@ function detectProviderForModel(modelName) {
   if (m.includes('4.6') || m.includes('argon') || m.includes('gpt-oss') || m.startsWith('ag/') || m.includes('gemini') || m.includes('antigravity') || m.includes('vertex')) {
     return 'gemini';
   }
-  if (m.startsWith('cx/') || m.includes('gpt-') || m.includes('o1') || m.includes('o3') || m.includes('codex') || m.includes('sol')) {
+  if (m.startsWith('cx/') || m.includes('gpt-') || m.includes('o1') || m.includes('o3') || m.includes('codex') || m.includes('sol') || m.includes('astra') || m.includes('terra') || m.includes('luna') || m.includes('6.2') || m.includes('5.6')) {
     return 'codex';
   }
   if (m.includes('claude')) {
