@@ -29,7 +29,7 @@ export default function Sidebar({ currentTab, setCurrentTab, status }) {
           <img src="/brand/brakthroonam-icon.svg" width="22" height="22" alt="Brakthroonam Logo" style={{ objectFit: 'contain' }} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-          <span className="sidebar-title" style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
+          <span className="sidebar-title" style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--text-main)', letterSpacing: '-0.025em', whiteSpace: 'nowrap' }}>
             Brakthroonam Router
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>

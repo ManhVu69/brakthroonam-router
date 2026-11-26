@@ -235,7 +235,7 @@ export default function GatewayProvidersView({ status, onStatusChange }) {
           </div>
           <div className="brand-info">
             <h1>
-              Providers
+              Provider
               <span className="live-chip">
                 <span className="pulse-dot"></span> Port :{status?.port || 20129}
               </span>
@@ -323,7 +323,7 @@ export default function GatewayProvidersView({ status, onStatusChange }) {
       {/* 3. Section Header */}
       <section className="bento-section-header">
         <div>
-          <div className="section-eyebrow">ACTIVE INFRASTRUCTURE</div>
+          <div className="section-eyebrow">Active Infrastructure</div>
           <h2>AI Provider Pools</h2>
           <p>Nhấp vào bất kỳ thẻ provider để cấu hình tài khoản, quét live model probe và thiết lập ma trận fallback</p>
         </div>
@@ -409,7 +409,7 @@ export default function GatewayProvidersView({ status, onStatusChange }) {
                 ) : (
                   <div className="acc-row-v2" style={{ color: 'var(--text-dim)', fontSize: '11px' }}>
                     <span>Chưa liên kết tài khoản nào</span>
-                    <span style={{ color: '#38bdf8', fontWeight: 600 }}>+ Thêm ngay</span>
+                    <span style={{ color: '#38bdf8', fontWeight: 500 }}>+ Thêm ngay</span>
                   </div>
                 )}
               </div>
