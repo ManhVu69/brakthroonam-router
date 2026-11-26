@@ -79,6 +79,34 @@ function ClaudeBrandIcon({ size = 26, color = '#D97757' }) {
   );
 }
 
+function formatResetTime(rawTime) {
+  if (!rawTime) return '';
+  const trimmed = String(rawTime).trim();
+  if (trimmed.startsWith('in ')) {
+    return trimmed.replace('in ', 'sau ');
+  }
+  if (trimmed.includes('T') && (trimmed.endsWith('Z') || trimmed.includes('+'))) {
+    try {
+      const target = new Date(trimmed);
+      const now = new Date();
+      const diffMs = target.getTime() - now.getTime();
+      if (isNaN(diffMs) || diffMs <= 0) return 'đã reset';
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      if (diffHours >= 24) {
+        const days = Math.floor(diffHours / 24);
+        const remH = diffHours % 24;
+        return `sau ${days}d ${remH}h`;
+      }
+      if (diffHours > 0) return `sau ${diffHours}h ${diffMins}m`;
+      return `sau ${diffMins}m`;
+    } catch {
+      return trimmed;
+    }
+  }
+  return trimmed;
+}
+
 export default function ProviderDrawer({ provider, onClose, onUpdated }) {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -318,6 +346,7 @@ export default function ProviderDrawer({ provider, onClose, onUpdated }) {
     setExpandedModelsMap(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
+  const models = provider.models || [];
   const isGemini = provider.id === 'gemini';
   const isCodex = provider.id === 'codex';
   const isClaude = provider.id === 'claude';
@@ -325,27 +354,31 @@ export default function ProviderDrawer({ provider, onClose, onUpdated }) {
 
   return (
     <div className="provider-console-shell">
-      {/* 1. BREADCRUMB & HEADER BAR */}
-      <nav className="console-nav" aria-label="Breadcrumb">
-        <div className="console-nav-left">
+      {/* 1. UNIFIED SINGLE-ROW NAVIGATION & STATUS BAR */}
+      <header className="console-nav-v2">
+        <div className="nav-left-v2">
           <button
             type="button"
-            className="console-back-btn"
+            className="nav-back-link"
             onClick={onClose}
           >
             <ArrowLeft size={14} />
             <span>Provider</span>
           </button>
-          <span className="nav-divider">/</span>
-          <div className="nav-current-provider">
+          <span className="nav-slash">/</span>
+          <div className="nav-provider-pill">
             {isGemini && <GeminiBrandIcon size={18} />}
             {isCodex && <OpenAIBrandIcon size={18} />}
             {isClaude && <ClaudeBrandIcon size={18} />}
-            <span className="provider-current-name">{provider.name}</span>
+            <span className="nav-provider-name">{provider.name}</span>
           </div>
+          <span className={`status-pill ${activeAccountsCount > 0 ? 'pill-active' : 'pill-dim'}`}>
+            <span className="pill-dot"></span>
+            <span>{activeAccountsCount > 0 ? `${activeAccountsCount} Active` : 'Chưa kích hoạt'}</span>
+          </span>
         </div>
 
-        <div className="console-nav-actions">
+        <div className="nav-actions-v2">
           <button
             type="button"
             className="action-btn secondary small"
@@ -365,61 +398,38 @@ export default function ProviderDrawer({ provider, onClose, onUpdated }) {
             <Plus size={14} />
             <span>{showAddForm ? 'Đóng form' : 'Thêm API Key'}</span>
           </button>
+
+          <button
+            type="button"
+            className="btn-icon close-header-btn"
+            onClick={onClose}
+            title="Đóng trang chi tiết"
+          >
+            <X size={15} />
+          </button>
         </div>
-      </nav>
-
-      {/* 2. REFINED EXECUTIVE HERO CARD */}
-      <header className="console-hero">
-        <div className="hero-brand-wrap">
-          <div className="hero-brand-tile">
-            {isGemini && <GeminiBrandIcon size={32} />}
-            {isCodex && <OpenAIBrandIcon size={32} color="#10b981" />}
-            {isClaude && <ClaudeBrandIcon size={32} color="#D97757" />}
-          </div>
-
-          <div className="hero-details">
-            <div className="hero-title-row">
-              <h1 className="hero-title">{provider.name}</h1>
-              <span className="badge-tag">{provider.badge || 'Trụ Cột Cung Cấp'}</span>
-              <span className={`status-pill ${activeAccountsCount > 0 ? 'pill-active' : 'pill-dim'}`}>
-                <span className="pill-dot"></span>
-                <span>{activeAccountsCount > 0 ? `${activeAccountsCount} Active` : 'Chưa kích hoạt'}</span>
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          className="btn-icon close-hero-btn"
-          onClick={onClose}
-          title="Đóng trang chi tiết"
-        >
-          <X size={16} />
-        </button>
       </header>
 
-      {/* 3. BALANCED ACCOUNTS WORKSPACE */}
+      {/* 2. MAIN WORKSPACE */}
       <div className="console-main-grid">
-        {/* LEFT COLUMN: ACCOUNTS MANAGEMENT & OAUTH */}
         <section className="console-left-col">
-          {/* OAUTH INTEGRATION BANNER */}
-          <div className="oauth-card">
-            <div className="oauth-info">
-              <div className="oauth-title-row">
-                <div className="oauth-brand-badge">
-                  {isGemini ? <GeminiBrandIcon size={18} /> : isCodex ? <OpenAIBrandIcon size={18} /> : <ClaudeBrandIcon size={18} />}
+          {/* OAUTH INTEGRATION FAST CONNECT BANNER */}
+          <div className="oauth-card-v2">
+            <div className="oauth-info-v2">
+              <div className="oauth-title-row-v2">
+                <div className="oauth-brand-badge-v2">
+                  {isGemini ? <GoogleGLogo size={17} /> : isCodex ? <OpenAIBrandIcon size={17} /> : <ClaudeBrandIcon size={17} />}
                 </div>
-                <span className="oauth-title">
+                <span className="oauth-title-text">
                   {isGemini
-                    ? 'Đăng nhập Google (OAuth 2.0 Auto-Token)'
+                    ? 'Đăng nhập Google (OAuth 2.0)'
                     : isCodex
                     ? 'Đăng nhập OpenAI Codex (OAuth)'
                     : 'Đăng nhập Anthropic Claude (OAuth)'}
                 </span>
-                <span className="badge-tag live-badge">Khuyên Dùng</span>
+                <span className="pill-tag-subtle">Khuyên dùng</span>
               </div>
-              <p className="oauth-desc">
+              <p className="oauth-desc-text">
                 {isGemini
                   ? 'Tự động trích xuất Token Antigravity và hạn mức Quota từ Google Cloud Code mà không cần tạo API Key thủ công.'
                   : isCodex
@@ -430,18 +440,18 @@ export default function ProviderDrawer({ provider, onClose, onUpdated }) {
 
             <button
               type="button"
-              className={`oauth-connect-btn ${isGemini ? 'oauth-btn-google' : isCodex ? 'oauth-btn-codex' : 'oauth-btn-claude'}`}
+              className="btn-oauth-v2"
               onClick={handleStartOAuth}
               disabled={isLoggingInGoogle}
             >
               {isLoggingInGoogle ? (
-                <RefreshCw size={14} className="spin" />
+                <RefreshCw size={13} className="spin" />
               ) : isGemini ? (
-                <GoogleGLogo size={16} />
+                <GoogleGLogo size={15} />
               ) : isCodex ? (
-                <OpenAIBrandIcon size={16} color="#fff" />
+                <OpenAIBrandIcon size={15} color="#fff" />
               ) : (
-                <ClaudeBrandIcon size={16} color="#fff" />
+                <ClaudeBrandIcon size={15} color="#fff" />
               )}
               <span>
                 {isLoggingInGoogle
@@ -519,277 +529,275 @@ export default function ProviderDrawer({ provider, onClose, onUpdated }) {
             </form>
           )}
 
-          {/* ACCOUNTS LIST HEADER */}
-          <div className="accounts-list-head">
-            <div className="accounts-count-title">
-              <span>Tài khoản đang kết nối</span>
-              <span className="badge-tag mono-text">{accounts.length}</span>
+          {/* ACCOUNTS DATA TABLE (OPTION A - LINEAR / VERCEL STYLE) */}
+          <div className="account-table-wrapper">
+            <div className="accounts-list-head">
+              <div className="accounts-count-title">
+                <span>Tài khoản đang kết nối</span>
+                <span className="badge-tag mono-text">{accounts.length}</span>
+              </div>
+              <span className="accounts-sub-hint">Ưu tiên điều phối: #1 Primary → #2 Fallback</span>
             </div>
-            <span className="accounts-sub-hint">Ưu tiên lần lượt theo thứ tự số #1, #2...</span>
-          </div>
 
-          {/* ACCOUNTS LIST */}
-          <div className="accounts-stack">
-            {loading ? (
-              <div className="empty-state-card">
-                <RefreshCw size={20} className="spin" />
-                <span>Đang tải danh sách tài khoản...</span>
+            <div className="account-table-container">
+              {/* TABLE HEADER */}
+              <div className="account-table-head">
+                <div className="col-identity">TÀI KHOẢN & VAI TRÒ</div>
+                <div className="col-quota">HẠN MỨC QUOTA</div>
+                <div className="col-probe">TÌNH TRẠNG LIVE PROBE</div>
+                <div className="col-actions">THAO TÁC</div>
               </div>
-            ) : accounts.length === 0 ? (
-              <div className="empty-state-card">
-                <Mail size={32} style={{ color: 'var(--text-dim)', marginBottom: '8px' }} />
-                <div style={{ color: '#fff', fontWeight: '500', fontSize: '14px' }}>
-                  Chưa có tài khoản nào được kết nối
+
+              {loading ? (
+                <div className="empty-state-card">
+                  <RefreshCw size={18} className="spin" />
+                  <span>Đang tải danh sách tài khoản...</span>
                 </div>
-                <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: '4px 0 0' }}>
-                  Bấm nút "Đăng nhập Google" hoặc "Thêm bằng API Key" ở trên để bắt đầu.
-                </p>
-              </div>
-            ) : (
-              accounts.map((acc, index) => {
-                const isOAuth = acc.auth_type === 'oauth';
-                const isTesting = testingId === acc.id;
-                const isCopiedEmail = copiedEmailId === acc.id;
-                const isExpanded = expandedModelsMap[acc.id] === true;
+              ) : accounts.length === 0 ? (
+                <div className="empty-state-card">
+                  <Mail size={28} style={{ color: 'var(--text-dim)', marginBottom: '8px' }} />
+                  <div style={{ color: '#fff', fontWeight: '500', fontSize: '13.5px' }}>
+                    Chưa có tài khoản nào được kết nối
+                  </div>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '4px 0 0' }}>
+                    Bấm nút "Đăng nhập Google" hoặc "Thêm bằng API Key" ở trên để bắt đầu.
+                  </p>
+                </div>
+              ) : (
+                accounts.map((acc, index) => {
+                  const isOAuth = acc.auth_type === 'oauth';
+                  const isTesting = testingId === acc.id;
+                  const isProbing = probingId === acc.id;
+                  const isCopiedEmail = copiedEmailId === acc.id;
+                  const isExpanded = expandedModelsMap[acc.id] === true;
 
-                // Quotas
-                let parsedQuotas = [];
-                try {
-                  parsedQuotas = acc.quotas ? JSON.parse(acc.quotas) : [];
-                } catch (e) {}
-                if (parsedQuotas.length === 0) {
-                  parsedQuotas = [
-                    { name: 'Quota 5h', remainingPercentage: 100, resetTime: 'in 4h 23m' },
-                    { name: 'Quota Weekly', remainingPercentage: 100, resetTime: 'in 6d 21h' }
-                  ];
-                }
-
-                // Probed models
-                let probedMap = {};
-                let hasProbed = false;
-                let realReadyCount = 0;
-                let realCappedCount = 0;
-                let realUnsupportedCount = 0;
-                try {
-                  if (acc.probed_models) {
-                    const parsed = JSON.parse(acc.probed_models);
-                    if (Array.isArray(parsed) && parsed.length > 0) {
-                      hasProbed = true;
-                      parsed.forEach(p => {
-                        probedMap[p.modelId] = p;
-                        if (p.statusCode === 200) realReadyCount++;
-                        else if (p.statusCode === 429) realCappedCount++;
-                        else if (p.statusCode === 404) realUnsupportedCount++;
-                      });
-                    }
+                  // Quotas
+                  let parsedQuotas = [];
+                  try {
+                    parsedQuotas = acc.quotas ? JSON.parse(acc.quotas) : [];
+                  } catch (e) {}
+                  if (parsedQuotas.length === 0) {
+                    parsedQuotas = [
+                      { name: '5h', remainingPercentage: 100, resetTime: 'in 4h 23m' },
+                      { name: 'Weekly', remainingPercentage: 100, resetTime: 'in 6d 21h' }
+                    ];
                   }
-                } catch (e) {}
 
-                const userEmail = acc.email || acc.name || 'User';
-                const initial = userEmail.charAt(0).toUpperCase();
+                  // Probed models
+                  let probedMap = {};
+                  let hasProbed = false;
+                  let realReadyCount = 0;
+                  let realCappedCount = 0;
+                  let realUnsupportedCount = 0;
+                  try {
+                    if (acc.probed_models) {
+                      const parsed = JSON.parse(acc.probed_models);
+                      if (Array.isArray(parsed) && parsed.length > 0) {
+                        hasProbed = true;
+                        parsed.forEach(p => {
+                          probedMap[p.modelId] = p;
+                          if (p.statusCode === 200) realReadyCount++;
+                          else if (p.statusCode === 429) realCappedCount++;
+                          else if (p.statusCode === 404) realUnsupportedCount++;
+                        });
+                      }
+                    }
+                  } catch (e) {}
 
-                return (
-                  <article key={acc.id} className="account-unit-card">
-                    {/* Header Row */}
-                    <div className="account-unit-top">
-                      <div className="account-identity">
-                        <div className="account-avatar-tile">
-                          {initial}
+                  const userEmail = acc.email || acc.name || 'User';
+                  const initial = userEmail.charAt(0).toUpperCase();
+
+                  return (
+                    <div key={acc.id} className={`account-row-group ${!acc.is_active ? 'is-inactive' : ''}`}>
+                      <div className="account-table-row">
+                        {/* 1. IDENTITY & ROLE */}
+                        <div className="col-identity">
+                          <div className="row-avatar-tile">{initial}</div>
+                          <div className="row-identity-meta">
+                            <div className="row-email-wrap">
+                              <span className="row-email-text" title={userEmail}>{userEmail}</span>
+                              <button
+                                type="button"
+                                className="btn-icon micro"
+                                onClick={() => handleCopyEmail(userEmail, acc.id)}
+                                title="Sao chép email"
+                              >
+                                {isCopiedEmail ? <Check size={11} style={{ color: '#10b981' }} /> : <Copy size={11} />}
+                              </button>
+                            </div>
+                            <div className="row-sub-tags">
+                              <span className={`priority-chip ${index === 0 ? 'is-primary' : 'is-fallback'}`}>
+                                #{index + 1} {index === 0 ? 'Primary' : 'Fallback'}
+                              </span>
+                              <span className="auth-chip">
+                                {isOAuth ? 'OAuth 2.0' : 'API Key'}
+                              </span>
+                              {acc.name && acc.name !== acc.email && (
+                                <span className="row-name-text">{acc.name}</span>
+                              )}
+                            </div>
+                          </div>
                         </div>
 
-                        <div>
-                          <div className="account-email-row">
-                            <span className="account-email-text">{acc.email || acc.name}</span>
+                        {/* 2. COMPACT QUOTA STACK */}
+                        <div className="col-quota">
+                          <div className="quota-mini-stack">
+                            {parsedQuotas.slice(0, 2).map((q, qIdx) => {
+                              const pct = q.remainingPercentage ?? 100;
+                              const barColor = pct > 50 ? '#10b981' : pct > 20 ? '#f59e0b' : '#ef4444';
+                              const shortName = q.name.toLowerCase().includes('weekly') ? 'Tuần' : '5h';
+                              const humanReset = formatResetTime(q.resetTime);
+                              return (
+                                <div key={qIdx} className="quota-mini-item">
+                                  <span className="quota-mini-name">{shortName}</span>
+                                  <div className="quota-mini-track">
+                                    <div
+                                      className="quota-mini-fill"
+                                      style={{ width: `${pct}%`, background: barColor }}
+                                    ></div>
+                                  </div>
+                                  <span className="quota-mini-pct mono-text" style={{ color: barColor }}>
+                                    {pct}%
+                                  </span>
+                                  {humanReset && (
+                                    <span className="quota-mini-reset mono-text">
+                                      {humanReset}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* 3. PROBE & HEALTH */}
+                        <div className="col-probe">
+                          <div className="probe-status-wrap">
+                            <div className="probe-status-main">
+                              <span className={`status-dot ${hasProbed && realReadyCount > 0 ? 'green' : 'dim'}`}></span>
+                              <span className="probe-status-label">
+                                {hasProbed
+                                  ? `${realReadyCount} models sẵn sàng`
+                                  : 'Chưa quét models'}
+                              </span>
+                            </div>
+                            <div className="probe-status-sub">
+                              <button
+                                type="button"
+                                className="btn-link-expand"
+                                onClick={() => toggleExpandModels(acc.id)}
+                              >
+                                <span>{isExpanded ? 'Thu gọn' : 'Ma trận models'} ({models.length})</span>
+                                {isExpanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 4. FAST ACTIONS */}
+                        <div className="col-actions">
+                          <button
+                            type="button"
+                            className="row-action-btn"
+                            onClick={() => handleTestConnection(acc.id)}
+                            disabled={isTesting}
+                            title="Test kết nối"
+                          >
+                            <RefreshCw size={11} className={isTesting ? 'spin' : ''} />
+                            <span>{isTesting ? 'Đang test...' : 'Test'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            className="row-action-btn probe-btn"
+                            onClick={() => handleProbeModels(acc.id)}
+                            disabled={isProbing}
+                            title="Quét toàn bộ models của tài khoản này"
+                          >
+                            <Search size={11} className={isProbing ? 'spin' : ''} />
+                            <span>{isProbing ? 'Quét...' : 'Quét'}</span>
+                          </button>
+
+                          {!isOAuth && (
                             <button
                               type="button"
                               className="btn-icon micro"
-                              onClick={() => handleCopyEmail(acc.email || acc.name, acc.id)}
-                              title="Sao chép email"
+                              onClick={() => {
+                                setEditingAccount(acc);
+                                setEditApiKey('');
+                              }}
+                              title="Sửa API Key"
                             >
-                              {isCopiedEmail ? <Check size={12} style={{ color: '#10b981' }} /> : <Copy size={12} />}
+                              <Edit2 size={12} />
                             </button>
-                          </div>
+                          )}
 
-                          <div className="account-meta-row">
-                            <span className="account-name-text">
-                              {acc.name && acc.name !== acc.email ? acc.name : 'Tài khoản Google'}
-                            </span>
-                            <span className="meta-sep">•</span>
-                            <span className="account-priority-badge mono-text">
-                              #{index + 1} {index === 0 ? 'Primary' : 'Fallback'}
-                            </span>
-                          </div>
+                          <label className="switch micro-switch" title="Bật/Tắt tài khoản này trong Router">
+                            <input
+                              type="checkbox"
+                              checked={!!acc.is_active}
+                              onChange={() => handleToggleActive(acc)}
+                            />
+                            <span className="slider"></span>
+                          </label>
+
+                          <button
+                            type="button"
+                            className="btn-icon micro text-danger"
+                            onClick={() => handleDelete(acc.id)}
+                            title="Xóa tài khoản"
+                          >
+                            <Trash2 size={13} />
+                          </button>
                         </div>
                       </div>
 
-                      <div className="account-controls">
-                        <span className={`status-pill ${isOAuth ? 'pill-active' : 'pill-dim'}`}>
-                          <span>{isOAuth ? 'OAuth 2.0' : 'API Key'}</span>
-                        </span>
-
-                        <label className="switch" title="Bật/Tắt tài khoản này trong Router">
-                          <input
-                            type="checkbox"
-                            checked={!!acc.is_active}
-                            onChange={() => handleToggleActive(acc)}
-                          />
-                          <span className="slider"></span>
-                        </label>
-
-                        <button
-                          type="button"
-                          className="btn-icon"
-                          onClick={() => handleDelete(acc.id)}
-                          title="Xóa tài khoản"
-                        >
-                          <Trash2 size={15} style={{ color: 'var(--text-dim)' }} />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Quota Progress Gauges */}
-                    <div className="account-quota-gauges">
-                      {parsedQuotas.slice(0, 2).map((q, qIdx) => {
-                        const pct = q.remainingPercentage ?? 100;
-                        const gaugeColor = pct > 50 ? '#10b981' : pct > 20 ? '#f59e0b' : '#ef4444';
-                        const gaugeGradient = pct > 50 
-                          ? 'linear-gradient(90deg, #10b981 0%, #34d399 100%)' 
-                          : pct > 20 
-                          ? 'linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%)' 
-                          : 'linear-gradient(90deg, #ef4444 0%, #f87171 100%)';
-                        return (
-                          <div key={qIdx} className="quota-gauge-col">
-                            <div className="quota-gauge-header">
-                              <span className="gauge-name">{q.name}</span>
-                              <span className="gauge-val mono-text" style={{ color: gaugeColor }}>
-                                {pct}% {q.resetTime ? `(${q.resetTime})` : ''}
-                              </span>
-                            </div>
-                            <div className="gauge-track">
-                              <div
-                                className="gauge-fill"
-                                style={{ width: `${pct}%`, background: gaugeGradient }}
-                              ></div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Probed Models Summary Pill */}
-                    <div className="account-probe-tray">
-                      <div
-                        className="probe-tray-trigger"
-                        onClick={() => toggleExpandModels(acc.id)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') toggleExpandModels(acc.id);
-                        }}
-                      >
-                        <div className="probe-tray-left">
-                          <Cpu size={14} className="tray-cpu-icon" />
-                          <span className="probe-summary-text">
-                            {hasProbed
-                              ? `Kết quả quét: ${realReadyCount} Sẵn sàng • ${realCappedCount} Hết quota • ${realUnsupportedCount} Không hỗ trợ`
-                              : `Danh mục ${models.length} models (Nhấn để xem kết quả quét)`}
-                          </span>
-                          <span className={`status-pill ${hasProbed && realReadyCount > 0 ? 'pill-active' : 'pill-dim'}`}>
-                            <span>{hasProbed ? `${realReadyCount} Live` : 'Chưa quét'}</span>
-                          </span>
-                        </div>
-
-                        <div className="probe-tray-toggle-hint">
-                          <span>{isExpanded ? 'Thu gọn' : 'Chi tiết'}</span>
-                          {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                        </div>
-                      </div>
-
-                      {/* Expandable Model Probe Grid */}
+                      {/* EXPANDED MODEL MATRIX ACCORDION */}
                       {isExpanded && (
-                        <div className="probe-details-grid">
-                          {models.map((m) => {
-                            const probeInfo = probedMap[m.id];
-                            const isReady = probeInfo?.statusCode === 200;
-                            const isCapped = probeInfo?.statusCode === 429;
-                            const is404 = probeInfo?.statusCode === 404;
+                        <div className="account-expanded-panel">
+                          <div className="probe-tray-info-bar">
+                            <span className="tray-info-text">
+                              {hasProbed
+                                ? `Kết quả quét: ${realReadyCount} Sẵn sàng • ${realCappedCount} Hết quota • ${realUnsupportedCount} Không hỗ trợ`
+                                : `Danh mục ${models.length} models có thể gọi qua tài khoản này`}
+                            </span>
+                          </div>
+                          <div className="probe-details-grid">
+                            {models.map((m) => {
+                              const probeInfo = probedMap[m.id];
+                              const isReady = probeInfo?.statusCode === 200;
+                              const isCapped = probeInfo?.statusCode === 429;
+                              const is404 = probeInfo?.statusCode === 404;
 
-                            return (
-                              <div
-                                key={m.id}
-                                className={`probe-mini-item ${isReady ? 'is-ready' : isCapped ? 'is-capped' : is404 ? 'is-404' : ''}`}
-                              >
-                                <div className="mini-item-head">
-                                  <span className="mini-tier-badge">T{m.tier}</span>
-                                  <span className="mini-ctx-tag mono-text">{m.ctx}</span>
+                              return (
+                                <div
+                                  key={m.id}
+                                  className={`probe-mini-item ${isReady ? 'is-ready' : isCapped ? 'is-capped' : is404 ? 'is-404' : ''}`}
+                                >
+                                  <div className="mini-item-head">
+                                    <span className="mini-tier-badge">T{m.tier}</span>
+                                    <span className="mini-ctx-tag mono-text">{m.ctx}</span>
+                                  </div>
+                                  <div className="mini-model-id mono-text" title={m.id}>
+                                    {m.id}
+                                  </div>
+                                  <div className="mini-status-text">
+                                    {isReady && <span className="text-ready">● Sẵn sàng ({probeInfo.latencyMs}ms)</span>}
+                                    {isCapped && <span className="text-capped">▲ Hết quota (429)</span>}
+                                    {is404 && <span className="text-unsupported">✕ Không hỗ trợ (404)</span>}
+                                    {!probeInfo && <span className="text-untested">○ Chưa kiểm tra</span>}
+                                  </div>
                                 </div>
-                                <div className="mini-model-id mono-text" title={m.id}>
-                                  {m.id}
-                                </div>
-                                <div className="mini-status-text">
-                                  {isReady && <span className="text-ready">● Sẵn sàng ({probeInfo.latencyMs}ms)</span>}
-                                  {isCapped && <span className="text-capped">▲ Hết quota (429)</span>}
-                                  {is404 && <span className="text-unsupported">✕ Không hỗ trợ (404)</span>}
-                                  {!probeInfo && <span className="text-untested">○ Chưa kiểm tra</span>}
-                                </div>
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
                         </div>
                       )}
                     </div>
-
-                    {/* Card Actions Footer */}
-                    <div className="account-unit-footer">
-                      <div className="footer-status-msg">
-                        <span className={`status-dot ${hasProbed && realReadyCount > 0 ? 'green' : 'dim'}`}></span>
-                        <span className="footer-status-text">
-                          {hasProbed
-                            ? `${realReadyCount} models sẵn sàng gọi token • Latency probe thấp`
-                            : (acc.test_message || 'Sẵn sàng định tuyến')}
-                        </span>
-                      </div>
-
-                      <div className="footer-actions-group">
-                        {!isOAuth && (
-                          <button
-                            type="button"
-                            className="btn-icon micro"
-                            onClick={() => {
-                              setEditingAccount(acc);
-                              setEditApiKey('');
-                            }}
-                            title="Sửa API Key"
-                          >
-                            <Edit2 size={13} />
-                          </button>
-                        )}
-
-                        <button
-                          type="button"
-                          className="btn-test-account"
-                          onClick={() => handleTestConnection(acc.id)}
-                          disabled={isTesting}
-                        >
-                          <RefreshCw size={11} className={isTesting ? 'spin' : ''} />
-                          <span>{isTesting ? 'Đang test...' : 'Test kết nối'}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          className="btn-probe-model"
-                          onClick={() => handleProbeModels(acc.id)}
-                          disabled={probingId === acc.id}
-                        >
-                          <Search size={11} className={probingId === acc.id ? 'spin' : ''} />
-                          <span>{probingId === acc.id ? 'Đang quét...' : 'Quét Live Models'}</span>
-                        </button>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })
-            )}
+                  );
+                })
+              )}
+            </div>
           </div>
         </section>
       </div>
